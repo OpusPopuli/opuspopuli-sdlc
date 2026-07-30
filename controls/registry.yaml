@@ -21,6 +21,16 @@ profiles:
     - gxp-csa
     - iso-medical
 
+# Display metadata for each family — the single source for the "Framework" column of the
+# generated control-mapping table in docs/compliance-model.md (issue #2). validate.ts fails if a
+# control uses a family with no entry here, so packs #7-#9 must add a label when they add a family.
+frameworks:
+  hipaa: { label: HIPAA, sort: 1 }
+  soc2: { label: SOC 2, sort: 2 }
+  part11: { label: 21 CFR Part 11, sort: 3 }
+  gxp-csa: { label: Part 11 / GxP (CSA), sort: 4 }
+  iso-medical: { label: ISO 62304 / 14971, sort: 5 }
+
 controls:
   - id: CTL-HIPAA-001
     title: PHI never appears in logs, prompts, or fixtures
