@@ -1,0 +1,234 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/OpusPopuli/opuspopuli-sdlc/controls/schema/registry.schema.json",
+  "title": "OpusPopuli SDLC control registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "preamble", "profiles", "controls"],
+  "properties": {
+    "version": { "const": 1 },
+    "preamble": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["intended_use"],
+      "properties": {
+        "intended_use": {
+          "type": "string",
+          "description": "Repo-relative path to the intended-use / GxP impact statement."
+        }
+      }
+    },
+    "profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["families"],
+      "properties": {
+        "families": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/slug" },
+          "description": "Framework families a consuming repo may declare in its profile. A control whose family is absent from a repo's profile is inert for that repo."
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/definitions/control" }
+    }
+  },
+  "definitions": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "isoDate": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "family",
+        "jurisdiction",
+        "applicability",
+        "citations",
+        "implemented_by",
+        "evidence",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^CTL-[A-Z0-9]+-\\d{3}$",
+          "description": "Stable control identifier, e.g. CTL-HIPAA-001. Never reused."
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "family": {
+          "$ref": "#/definitions/slug",
+          "description": "Must be one of profiles.families (enforced semantically by validate.ts)."
+        },
+        "jurisdiction": {
+          "$ref": "#/definitions/slug",
+          "description": "Legal regime, open vocabulary: us, us-ca, eu, global, ... New jurisdictions need no schema change."
+        },
+        "applicability": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/definitions/slug" },
+          "description": "Product/data contexts that trigger the control, open vocabulary: us-phi, us-regulated-records, eu-personal-data, eu-samd, all, ..."
+        },
+        "citations": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/citation" }
+        },
+        "implemented_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/definitions/implementation" }
+        },
+        "evidence": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Evidence artifact paths (glob-ish) produced in consuming repos."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "pin-pending"],
+          "description": "pin-pending = at least one pinnable citation has no pin yet (enforced semantically by validate.ts)."
+        }
+      }
+    },
+    "citation": {
+      "oneOf": [
+        { "$ref": "#/definitions/citationEcfr" },
+        { "$ref": "#/definitions/citationEurlex" },
+        { "$ref": "#/definitions/citationDocument" },
+        { "$ref": "#/definitions/citationClause" }
+      ]
+    },
+    "citationEcfr": {
+      "type": "object",
+      "description": "US federal regulation via the eCFR Versioner API (public domain; pinnable and drift-watchable).",
+      "additionalProperties": false,
+      "required": ["adapter", "cfr_title", "cfr_part"],
+      "properties": {
+        "adapter": { "const": "ecfr" },
+        "cfr_title": { "type": "integer", "minimum": 1, "maximum": 50 },
+        "cfr_part": { "type": "string", "pattern": "^[0-9]+[A-Za-z]?$" },
+        "cfr_section": {
+          "type": "string",
+          "pattern": "^[0-9]+[A-Za-z]?\\.[0-9]+$",
+          "description": "Optional section granularity, e.g. 164.312."
+        },
+        "note": { "type": "string" },
+        "pinned": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["amendment_date", "checked"],
+          "properties": {
+            "amendment_date": {
+              "$ref": "#/definitions/isoDate",
+              "description": "Latest amendment date of the pinned part per the Versioner API."
+            },
+            "checked": {
+              "$ref": "#/definitions/isoDate",
+              "description": "Date the pin was last verified against the API."
+            }
+          }
+        }
+      }
+    },
+    "citationEurlex": {
+      "type": "object",
+      "description": "EU law via EUR-Lex CELEX/ELI (freely reusable; pinnable and drift-watchable). Reserved for the framework packs (#7, #9) — schema-ready now so packs need no schema change.",
+      "additionalProperties": false,
+      "required": ["adapter", "celex"],
+      "properties": {
+        "adapter": { "const": "eurlex" },
+        "celex": { "type": "string", "pattern": "^[0-9]{5}[A-Z]{1,2}[0-9]{4}(\\([0-9]{2}\\))?$" },
+        "article": { "type": "string" },
+        "note": { "type": "string" },
+        "pinned": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["consolidation_date", "checked"],
+          "properties": {
+            "consolidation_date": { "$ref": "#/definitions/isoDate" },
+            "checked": { "$ref": "#/definitions/isoDate" }
+          }
+        }
+      }
+    },
+    "citationDocument": {
+      "type": "object",
+      "description": "Public guidance document (FDA guidance, MDCG, EudraLex annex, state statute page) pinned by URL + sha256.",
+      "additionalProperties": false,
+      "required": ["adapter", "name", "url"],
+      "properties": {
+        "adapter": { "const": "document" },
+        "name": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "pattern": "^https://" },
+        "normalization": {
+          "type": "string",
+          "enum": ["raw", "text"],
+          "default": "raw",
+          "description": "raw = checksum the bytes (PDFs). text = strip markup and collapse whitespace before checksumming (HTML statute pages), so template changes don't fire false drift alarms."
+        },
+        "note": { "type": "string" },
+        "pinned": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["sha256", "retrieved"],
+          "properties": {
+            "sha256": { "$ref": "#/definitions/sha256" },
+            "retrieved": { "$ref": "#/definitions/isoDate" }
+          }
+        }
+      }
+    },
+    "citationClause": {
+      "type": "object",
+      "description": "Copyrighted framework cited by clause identifier ONLY. No text body is representable — additionalProperties:false makes vendoring paywalled text a schema violation, not a policy violation.",
+      "additionalProperties": false,
+      "required": ["adapter", "framework", "clause"],
+      "properties": {
+        "adapter": { "const": "clause" },
+        "framework": {
+          "type": "string",
+          "description": "e.g. SOC2-TSC-2017, GAMP5-2E, IEC-62304-2006, ISO-14971-2019."
+        },
+        "clause": { "type": "string", "minLength": 1 },
+        "edition_note": {
+          "type": "string",
+          "description": "Human note about which edition; new-edition checks are manual (no automated polling of paywalled sources)."
+        }
+      }
+    },
+    "implementation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "ref"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["skill", "hook", "architecture"],
+          "description": "skill → skills/<ref>/SKILL.md must exist. hook → hooks/<ref>.md must exist. architecture → posture documented in docs/compliance-model.md (no file check)."
+        },
+        "ref": { "$ref": "#/definitions/slug" },
+        "note": { "type": "string" }
+      }
+    }
+  }
+}
