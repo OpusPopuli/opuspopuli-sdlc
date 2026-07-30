@@ -2,13 +2,13 @@
 // Usage: node --experimental-strip-types controls/scripts/validate.ts [registry.yaml]
 // Exit code 0 = valid; 1 = findings (printed one per line).
 import { readFileSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parse } from "yaml";
 import { Ajv } from "ajv";
+import { SCHEMA_PATH, REGISTRY_PATH } from "./registry.ts";
 
-const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-export const SCHEMA_PATH = join(SCRIPT_DIR, "..", "schema", "registry.schema.json");
+export { SCHEMA_PATH };
 
 export interface Finding {
   level: "error";
@@ -40,6 +40,7 @@ export function validateRegistry(registry: unknown, opts: ValidateOptions): Find
   const reg = registry as {
     preamble: { intended_use: string };
     profiles: { families: string[] };
+    frameworks?: Record<string, { label: string; sort: number }>;
     controls: Array<{
       id: string;
       family: string;
@@ -54,6 +55,13 @@ export function validateRegistry(registry: unknown, opts: ValidateOptions): Find
   }
 
   const families = new Set(reg.profiles.families);
+  const frameworks = reg.frameworks ?? {};
+  // Every framework label must key a declared family — no orphan labels.
+  for (const key of Object.keys(frameworks)) {
+    if (!families.has(key)) {
+      err(`frameworks: "${key}" is not a declared family in profiles.families`);
+    }
+  }
   const seenIds = new Set<string>();
 
   for (const control of reg.controls) {
@@ -62,6 +70,11 @@ export function validateRegistry(registry: unknown, opts: ValidateOptions): Find
 
     if (!families.has(control.family)) {
       err(`${control.id}: family "${control.family}" is not declared in profiles.families`);
+    }
+    // Completeness for the generated compliance-model table (#2): every family a control uses
+    // must resolve to a display label, so a new pack (#7-#9) can't add a family that renders blank.
+    if (!frameworks[control.family]) {
+      err(`${control.id}: family "${control.family}" has no entry in frameworks[] (needed for the generated table)`);
     }
 
     for (const impl of control.implemented_by) {
@@ -103,7 +116,7 @@ export function validateRegistry(registry: unknown, opts: ValidateOptions): Find
 
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
-  const registryPath = process.argv[2] ?? join(process.cwd(), "controls", "registry.yaml");
+  const registryPath = process.argv[2] ?? REGISTRY_PATH;
   const registry = parse(readFileSync(registryPath, "utf8"));
   const findings = validateRegistry(registry, { repoRoot: process.cwd() });
   for (const f of findings) console.error(`${f.level}: ${f.message}`);

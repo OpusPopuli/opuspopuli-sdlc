@@ -25,11 +25,30 @@ type-stripping — Node ≥ 22.6 (`--experimental-strip-types`; default-on from 
 step. Dependencies: `ajv` (MIT), `yaml` (ISC) only.
 
 ```
+nvm use              # Node 22 (see .nvmrc) — required for type-stripping
 npm ci
 npm run validate     # must pass offline
 npm test             # must pass offline
+npm run docs:check   # verify docs/compliance-model.md matches the registry (offline)
 npm run pin -- --all-pending   # network required; normally run from CI
 ```
+
+## Generated documentation
+
+The **control-mapping table** in [`docs/compliance-model.md`](../docs/compliance-model.md) is
+generated from this registry by `controls/scripts/generate-docs.ts` — do not hand-edit it. The
+generated region is delimited by `<!-- BEGIN generated:control-mapping -->` /
+`<!-- END generated:control-mapping -->`; prose outside the markers is never touched.
+
+```
+npm run docs:generate   # rewrite the table from the registry
+npm run docs:check      # verify the committed table matches (exit 1 on drift) — used by CI (#3)
+```
+
+The "Framework" column comes from the `frameworks:` map in `registry.yaml` (family slug →
+`{ label, sort }`); `validate.ts` fails if any control uses a family with no label, so a new pack
+can't introduce a family that renders blank. Output is sorted by framework `sort` then control ID,
+so regeneration is deterministic and `docs:check` is a stable equality test.
 
 ## Control entries
 

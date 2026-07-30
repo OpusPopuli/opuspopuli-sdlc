@@ -4,7 +4,7 @@
   "title": "OpusPopuli SDLC control registry",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "preamble", "profiles", "controls"],
+  "required": ["version", "preamble", "profiles", "frameworks", "controls"],
   "properties": {
     "version": { "const": 1 },
     "preamble": {
@@ -15,6 +15,28 @@
         "intended_use": {
           "type": "string",
           "description": "Repo-relative path to the intended-use / GxP impact statement."
+        }
+      }
+    },
+    "frameworks": {
+      "type": "object",
+      "description": "Display metadata for framework families, keyed by family slug. Single source for the generated compliance-model table (#2); validate.ts enforces that every family a control uses has an entry here, and that no entry is an orphan.",
+      "minProperties": 1,
+      "propertyNames": { "pattern": "^[a-z0-9][a-z0-9-]*$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["label", "sort"],
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable framework name shown in the generated table, e.g. \"21 CFR Part 11\"."
+          },
+          "sort": {
+            "type": "integer",
+            "description": "Row-grouping order in the generated table (ascending)."
+          }
         }
       }
     },

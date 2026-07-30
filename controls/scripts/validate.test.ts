@@ -24,6 +24,7 @@ test("the seed registry validates clean", () => {
 test("GDPR dry-run entry fits the schema unchanged", () => {
   const reg = loadRegistry();
   reg.profiles.families.push("gdpr");
+  reg.frameworks.gdpr = { label: "GDPR", sort: 6 };
   reg.controls.push({
     id: "CTL-GDPR-001",
     title: "Breach notification within 72 hours of awareness",
