@@ -38,20 +38,27 @@ exception in the release validation pack.
 > [`controls/registry.yaml`](../controls/registry.yaml) — the machine-readable registry in which
 > every control is pinned to its authoritative source (eCFR / guidance documents by checksum;
 > copyrighted frameworks by clause ID only) and mapped to the skills/hooks that implement it.
-> Edit the registry, not this table. (Automated generation of this view — including per-row
-> registry IDs — lands with issue #2; until then the registry wins on any discrepancy.)
+> Edit the registry, not this table. **The table below is generated** by
+> `controls/scripts/generate-docs.ts` (`npm run docs:generate`) — hand edits between the markers
+> are overwritten and fail `npm run docs:check` in CI. Each row's Control ID keys the corresponding
+> entry in `controls/registry.yaml`.
 
-| Framework | Control | How it's satisfied |
-|-----------|---------|--------------------|
-| **HIPAA** | PHI never in logs/prompts/fixtures | `op-phi-scan` + pre-push PHI gate + audit-logger PII masking |
-| **HIPAA** | Data residency / minimum necessary | Self-hosted models + private prompt service → **no PHI or code sent to a third-party model vendor** |
-| **HIPAA** | Access to PHI restricted | GraphQL field-level exposure reviewed in `op-review` |
-| **SOC 2** | CC8.1 change management | Plan → review → enforced gate → PR → `op-change-record` |
-| **SOC 2 / Part 11** | Separation of duties | `op-review` + `op-change-record` flag self-review; require countersignature |
-| **21 CFR Part 11** | Requirement→code→test→release traceability | `op-trace` RTM |
-| **21 CFR Part 11** | Electronic signatures | Approvals captured as signed who/when/meaning records |
-| **Part 11 / GxP (CSV/CSA)** | Validation evidence | `op-validate` release qualification pack |
-| **ISO 62304 / 14971** | Risk management per change | Risk register in every `op-issue-plan` |
+<!-- BEGIN generated:control-mapping -->
+
+| Control ID | Framework | Control | Implemented by |
+|------------|-----------|---------|----------------|
+| `CTL-HIPAA-001` | HIPAA | PHI never appears in logs, prompts, or fixtures | `op-phi-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
+| `CTL-HIPAA-002` | HIPAA | Data residency and minimum necessary — no PHI or code to third-party model vendors | self-hosted-models (arch), private-prompt-service (arch), `op-validate` |
+| `CTL-HIPAA-003` | HIPAA | Access to PHI is restricted and reviewed at the API surface | `op-review` |
+| `CTL-SOC2-001` | SOC 2 | Change management — plan, independent review, enforced gate, recorded change | `op-issue-plan`, `op-review`, `pre-push-gate` (hook), `op-change-record` |
+| `CTL-SOD-001` | SOC 2 | Separation of duties — self-review is flagged and requires countersignature | `op-review`, `op-change-record` |
+| `CTL-P11-001` | 21 CFR Part 11 | Requirement-to-code-to-test-to-release traceability | `op-trace` |
+| `CTL-P11-002` | 21 CFR Part 11 | Electronic signatures — approvals captured as signed who/when/meaning records | `op-change-record` |
+| `CTL-AIQ-001` | Part 11 / GxP (CSA) | AI tool qualification — the AI tooling itself is qualified for its intended use | self-hosted-models (arch), private-prompt-service (arch), human-gated-skills (arch), `op-validate` |
+| `CTL-CSA-001` | Part 11 / GxP (CSA) | Validation evidence — risk-based release qualification pack (CSA posture) | `op-validate` |
+| `CTL-ISO-001` | ISO 62304 / 14971 | Risk management per change — risk register in every plan of record | `op-issue-plan` |
+
+<!-- END generated:control-mapping -->
 
 ## The data-residency advantage
 

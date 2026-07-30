@@ -10,6 +10,8 @@
   "scripts": {
     "validate": "node --experimental-strip-types controls/scripts/validate.ts",
     "pin": "node --experimental-strip-types controls/scripts/pin.ts",
+    "docs:generate": "node --experimental-strip-types controls/scripts/generate-docs.ts",
+    "docs:check": "node --experimental-strip-types controls/scripts/generate-docs.ts --check",
     "test": "node --experimental-strip-types --test \"controls/scripts/*.test.ts\""
   },
   "devDependencies": {
