@@ -1,0 +1,245 @@
+# OpusPopuli SDLC — control registry (issue #1)
+# Canonical source of the control mapping. Validated by controls/scripts/validate.ts against
+# controls/schema/registry.schema.json; pins are produced by controls/scripts/pin.ts (network
+# required — run from CI when the dev sandbox has restricted egress).
+#
+# status: pin-pending = a pinnable citation has no pin yet. The upstream drift watch (#4)
+# re-verifies pins on a schedule; the internal drift gate (#3) reconciles this file against
+# skills/, hooks/, and the generated docs.
+version: 1
+
+preamble:
+  intended_use: controls/intended-use.md
+
+profiles:
+  # Framework families a consuming repo may declare. Controls outside a repo's declared
+  # families are inert for that repo. Extension packs (#7-#9) add families here.
+  families:
+    - hipaa
+    - part11
+    - soc2
+    - gxp-csa
+    - iso-medical
+
+controls:
+  - id: CTL-HIPAA-001
+    title: PHI never appears in logs, prompts, or fixtures
+    family: hipaa
+    jurisdiction: us
+    applicability: [us-phi]
+    citations:
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.312"
+        note: Security Rule technical safeguards
+    implemented_by:
+      - type: skill
+        ref: op-phi-scan
+      - type: hook
+        ref: pre-push-gate
+        note: PHI gate runs on every push
+      - type: architecture
+        ref: audit-logger-pii-masking
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: pin-pending
+
+  - id: CTL-HIPAA-002
+    title: Data residency and minimum necessary — no PHI or code to third-party model vendors
+    family: hipaa
+    jurisdiction: us
+    applicability: [us-phi]
+    citations:
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.502"
+        note: Uses and disclosures; minimum necessary
+    implemented_by:
+      - type: architecture
+        ref: self-hosted-models
+      - type: architecture
+        ref: private-prompt-service
+      - type: skill
+        ref: op-validate
+        note: residency posture stated in every release validation pack
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: pin-pending
+
+  - id: CTL-HIPAA-003
+    title: Access to PHI is restricted and reviewed at the API surface
+    family: hipaa
+    jurisdiction: us
+    applicability: [us-phi]
+    citations:
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.312"
+        note: Access control
+    implemented_by:
+      - type: skill
+        ref: op-review
+        note: GraphQL field-level exposure review
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: pin-pending
+
+  - id: CTL-SOC2-001
+    title: Change management — plan, independent review, enforced gate, recorded change
+    family: soc2
+    jurisdiction: global
+    applicability: [all]
+    citations:
+      - adapter: clause
+        framework: SOC2-TSC-2017
+        clause: CC8.1
+        edition_note: AICPA Trust Services Criteria (2017, incl. 2022 revised points of focus)
+    implemented_by:
+      - type: skill
+        ref: op-issue-plan
+      - type: skill
+        ref: op-review
+      - type: hook
+        ref: pre-push-gate
+      - type: skill
+        ref: op-change-record
+    evidence:
+      - docs/plans/*.md
+      - docs/compliance/changes/*-change-record.md
+    status: active
+
+  - id: CTL-SOD-001
+    title: Separation of duties — self-review is flagged and requires countersignature
+    family: soc2
+    jurisdiction: global
+    applicability: [all]
+    citations:
+      - adapter: clause
+        framework: SOC2-TSC-2017
+        clause: CC5.1
+      - adapter: ecfr
+        cfr_title: 21
+        cfr_part: "11"
+        cfr_section: "11.10"
+        note: Controls for closed systems, (g) authority checks
+    implemented_by:
+      - type: skill
+        ref: op-review
+      - type: skill
+        ref: op-change-record
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: pin-pending
+
+  - id: CTL-P11-001
+    title: Requirement-to-code-to-test-to-release traceability
+    family: part11
+    jurisdiction: us
+    applicability: [us-regulated-records]
+    citations:
+      - adapter: ecfr
+        cfr_title: 21
+        cfr_part: "11"
+        cfr_section: "11.10"
+        note: (e) audit trails, (k) documentation controls
+    implemented_by:
+      - type: skill
+        ref: op-trace
+    evidence:
+      - docs/compliance/traceability/*-rtm.md
+    status: pin-pending
+
+  - id: CTL-P11-002
+    title: Electronic signatures — approvals captured as signed who/when/meaning records
+    family: part11
+    jurisdiction: us
+    applicability: [us-regulated-records]
+    citations:
+      - adapter: ecfr
+        cfr_title: 21
+        cfr_part: "11"
+        cfr_section: "11.50"
+        note: Signature manifestations
+    implemented_by:
+      - type: skill
+        ref: op-change-record
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: pin-pending
+
+  - id: CTL-CSA-001
+    title: Validation evidence — risk-based release qualification pack (CSA posture)
+    family: gxp-csa
+    jurisdiction: us
+    applicability: [us-regulated-records]
+    citations:
+      - adapter: ecfr
+        cfr_title: 21
+        cfr_part: "11"
+        cfr_section: "11.10"
+        note: (a) validation of systems
+      - adapter: document
+        name: FDA guidance — Computer Software Assurance for Production and Quality System Software
+        url: https://www.fda.gov/regulatory-information/search-fda-guidance-documents/computer-software-assurance-production-and-quality-system-software
+        normalization: text
+        note: Guidance landing page; when pinning from CI, prefer the PDF media URL if stable
+    implemented_by:
+      - type: skill
+        ref: op-validate
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: pin-pending
+
+  - id: CTL-ISO-001
+    title: Risk management per change — risk register in every plan of record
+    family: iso-medical
+    jurisdiction: global
+    applicability: [samd]
+    citations:
+      - adapter: clause
+        framework: IEC-62304-2006
+        clause: "5.1 (software development planning), 7 (risk management process)"
+        edition_note: incl. Amd 1:2015
+      - adapter: clause
+        framework: ISO-14971-2019
+        clause: "Clauses 4-10"
+    implemented_by:
+      - type: skill
+        ref: op-issue-plan
+    evidence:
+      - docs/plans/*.md
+    status: active
+
+  - id: CTL-AIQ-001
+    title: AI tool qualification — the AI tooling itself is qualified for its intended use
+    description: >-
+      Records model version, prompt-service configuration, human-gating posture, and the
+      data-residency boundary (self-hosted models; no source code or regulated data leaves the
+      trust boundary). Answers the auditor question "how is the AI assisting this SDLC itself
+      controlled?".
+    family: gxp-csa
+    jurisdiction: global
+    applicability: [all]
+    citations:
+      - adapter: clause
+        framework: GAMP5-2E
+        clause: AI/ML appendix
+        edition_note: >-
+          GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering against a licensed
+          copy before citing in an audit response; text is never vendored here.
+    implemented_by:
+      - type: architecture
+        ref: self-hosted-models
+      - type: architecture
+        ref: private-prompt-service
+      - type: architecture
+        ref: human-gated-skills
+      - type: skill
+        ref: op-validate
+        note: qualification record referenced in the release validation pack
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: active

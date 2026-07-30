@@ -1,0 +1,19 @@
+{
+  "name": "opuspopuli-sdlc-tooling",
+  "private": true,
+  "description": "Internal tooling for the control registry. Not an npm package — this repo is a Claude Code plugin; see README.md.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.6"
+  },
+  "scripts": {
+    "validate": "node --experimental-strip-types controls/scripts/validate.ts",
+    "pin": "node --experimental-strip-types controls/scripts/pin.ts",
+    "test": "node --experimental-strip-types --test \"controls/scripts/*.test.ts\""
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0",
+    "yaml": "^2.9.0"
+  }
+}

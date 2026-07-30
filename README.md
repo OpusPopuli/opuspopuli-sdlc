@@ -23,7 +23,13 @@ control mapping):
 - **Ship** — `op-release`, `op-validate` (release validation pack)
 - **Operate** — `op-hotfix` (incident record + backlog loop)
 
-Plus a repo-side enforcement gate: [`hooks/pre-push-gate.md`](hooks/pre-push-gate.md).
+Plus a repo-side enforcement gate: [`hooks/pre-push-gate.md`](hooks/pre-push-gate.md), and a
+machine-readable **control registry** ([`controls/`](controls/README.md)) that pins every declared
+control to its authoritative source (eCFR, guidance documents, framework clause IDs) with
+provenance — the foundation for CI-enforced drift detection in both directions (issues #3/#4).
+
+> The root `package.json` exists only for the registry's TypeScript tooling — this repo is a
+> Claude Code plugin, not an npm package.
 
 > Repo-specific skills stay in their home repo — e.g. `op-migration` (Supabase migration layout) lives in
 > the `opuspopuli` monorepo, not here.
