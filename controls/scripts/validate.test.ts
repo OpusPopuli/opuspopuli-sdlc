@@ -79,6 +79,8 @@ test("clause citations cannot carry vendored text", () => {
 test("active status with unpinned pinnable citation is rejected", () => {
   const reg = loadRegistry();
   const hipaa = reg.controls.find((c: any) => c.id === "CTL-HIPAA-001");
+  // Construct the invalid state explicitly: strip the pin but keep status active.
+  delete hipaa.citations[0].pinned;
   hipaa.status = "active";
   const findings = validateRegistry(reg, { repoRoot: REPO_ROOT });
   assert.ok(findings.some((f) => f.message.includes('must be "pin-pending"')));
@@ -87,7 +89,8 @@ test("active status with unpinned pinnable citation is rejected", () => {
 test("pin-pending status with everything pinned is rejected", () => {
   const reg = loadRegistry();
   const p11 = reg.controls.find((c: any) => c.id === "CTL-P11-001");
-  p11.citations[0].pinned = { amendment_date: "2024-01-01", checked: "2026-07-30" };
+  // Every pinnable citation is pinned in the seed; claiming pin-pending is the violation.
+  p11.status = "pin-pending";
   const findings = validateRegistry(reg, { repoRoot: REPO_ROOT });
   assert.ok(findings.some((f) => f.message.includes('must be "active"')));
 });

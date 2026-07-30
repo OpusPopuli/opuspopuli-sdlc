@@ -26,13 +26,16 @@ controls:
     title: PHI never appears in logs, prompts, or fixtures
     family: hipaa
     jurisdiction: us
-    applicability: [us-phi]
+    applicability: [ us-phi ]
     citations:
       - adapter: ecfr
         cfr_title: 45
         cfr_part: "164"
         cfr_section: "164.312"
         note: Security Rule technical safeguards
+        pinned:
+          amendment_date: 2016-12-30
+          checked: 2026-07-30
     implemented_by:
       - type: skill
         ref: op-phi-scan
@@ -43,19 +46,23 @@ controls:
         ref: audit-logger-pii-masking
     evidence:
       - docs/compliance/releases/*-validation.md
-    status: pin-pending
+    status: active
 
   - id: CTL-HIPAA-002
-    title: Data residency and minimum necessary — no PHI or code to third-party model vendors
+    title: Data residency and minimum necessary — no PHI or code to third-party
+      model vendors
     family: hipaa
     jurisdiction: us
-    applicability: [us-phi]
+    applicability: [ us-phi ]
     citations:
       - adapter: ecfr
         cfr_title: 45
         cfr_part: "164"
         cfr_section: "164.502"
         note: Uses and disclosures; minimum necessary
+        pinned:
+          amendment_date: 2024-06-25
+          checked: 2026-07-30
     implemented_by:
       - type: architecture
         ref: self-hosted-models
@@ -66,37 +73,42 @@ controls:
         note: residency posture stated in every release validation pack
     evidence:
       - docs/compliance/releases/*-validation.md
-    status: pin-pending
+    status: active
 
   - id: CTL-HIPAA-003
     title: Access to PHI is restricted and reviewed at the API surface
     family: hipaa
     jurisdiction: us
-    applicability: [us-phi]
+    applicability: [ us-phi ]
     citations:
       - adapter: ecfr
         cfr_title: 45
         cfr_part: "164"
         cfr_section: "164.312"
         note: Access control
+        pinned:
+          amendment_date: 2016-12-30
+          checked: 2026-07-30
     implemented_by:
       - type: skill
         ref: op-review
         note: GraphQL field-level exposure review
     evidence:
       - docs/compliance/changes/*-change-record.md
-    status: pin-pending
+    status: active
 
   - id: CTL-SOC2-001
-    title: Change management — plan, independent review, enforced gate, recorded change
+    title: Change management — plan, independent review, enforced gate, recorded
+      change
     family: soc2
     jurisdiction: global
-    applicability: [all]
+    applicability: [ all ]
     citations:
       - adapter: clause
         framework: SOC2-TSC-2017
         clause: CC8.1
-        edition_note: AICPA Trust Services Criteria (2017, incl. 2022 revised points of focus)
+        edition_note: AICPA Trust Services Criteria (2017, incl. 2022 revised points of
+          focus)
     implemented_by:
       - type: skill
         ref: op-issue-plan
@@ -115,7 +127,7 @@ controls:
     title: Separation of duties — self-review is flagged and requires countersignature
     family: soc2
     jurisdiction: global
-    applicability: [all]
+    applicability: [ all ]
     citations:
       - adapter: clause
         framework: SOC2-TSC-2017
@@ -125,6 +137,9 @@ controls:
         cfr_part: "11"
         cfr_section: "11.10"
         note: Controls for closed systems, (g) authority checks
+        pinned:
+          amendment_date: 2016-12-29
+          checked: 2026-07-30
     implemented_by:
       - type: skill
         ref: op-review
@@ -132,72 +147,88 @@ controls:
         ref: op-change-record
     evidence:
       - docs/compliance/changes/*-change-record.md
-    status: pin-pending
+    status: active
 
   - id: CTL-P11-001
     title: Requirement-to-code-to-test-to-release traceability
     family: part11
     jurisdiction: us
-    applicability: [us-regulated-records]
+    applicability: [ us-regulated-records ]
     citations:
       - adapter: ecfr
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.10"
         note: (e) audit trails, (k) documentation controls
+        pinned:
+          amendment_date: 2016-12-29
+          checked: 2026-07-30
     implemented_by:
       - type: skill
         ref: op-trace
     evidence:
       - docs/compliance/traceability/*-rtm.md
-    status: pin-pending
+    status: active
 
   - id: CTL-P11-002
-    title: Electronic signatures — approvals captured as signed who/when/meaning records
+    title: Electronic signatures — approvals captured as signed who/when/meaning
+      records
     family: part11
     jurisdiction: us
-    applicability: [us-regulated-records]
+    applicability: [ us-regulated-records ]
     citations:
       - adapter: ecfr
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.50"
         note: Signature manifestations
+        pinned:
+          amendment_date: 2016-12-29
+          checked: 2026-07-30
     implemented_by:
       - type: skill
         ref: op-change-record
     evidence:
       - docs/compliance/changes/*-change-record.md
-    status: pin-pending
+    status: active
 
   - id: CTL-CSA-001
     title: Validation evidence — risk-based release qualification pack (CSA posture)
     family: gxp-csa
     jurisdiction: us
-    applicability: [us-regulated-records]
+    applicability: [ us-regulated-records ]
     citations:
       - adapter: ecfr
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.10"
         note: (a) validation of systems
+        pinned:
+          amendment_date: 2016-12-29
+          checked: 2026-07-30
       - adapter: document
-        name: FDA guidance — Computer Software Assurance for Production and Quality System Software
-        url: https://www.fda.gov/regulatory-information/search-fda-guidance-documents/computer-software-assurance-production-and-quality-system-software
-        normalization: text
-        note: Guidance landing page; when pinning from CI, prefer the PDF media URL if stable
+        name: FDA guidance — Computer Software Assurance for Production and Quality
+          System Software
+        url: https://www.fda.gov/media/188844/download
+        normalization: raw
+        note: Final guidance PDF (finalized 2025-09-24; stable /media/ download URL).
+          The human-readable landing page is
+          fda.gov/regulatory-information/search-fda-guidance-documents/computer-software-assurance-production-and-quality-system-software
+        pinned:
+          sha256: 11e2e21f5eb226b56a578da44e732965a2318e9b983422c6a58e51bc7b2e223a
+          retrieved: 2026-07-30
     implemented_by:
       - type: skill
         ref: op-validate
     evidence:
       - docs/compliance/releases/*-validation.md
-    status: pin-pending
+    status: active
 
   - id: CTL-ISO-001
     title: Risk management per change — risk register in every plan of record
     family: iso-medical
     jurisdiction: global
-    applicability: [samd]
+    applicability: [ samd ]
     citations:
       - adapter: clause
         framework: IEC-62304-2006
@@ -214,22 +245,24 @@ controls:
     status: active
 
   - id: CTL-AIQ-001
-    title: AI tool qualification — the AI tooling itself is qualified for its intended use
+    title: AI tool qualification — the AI tooling itself is qualified for its
+      intended use
     description: >-
-      Records model version, prompt-service configuration, human-gating posture, and the
-      data-residency boundary (self-hosted models; no source code or regulated data leaves the
-      trust boundary). Answers the auditor question "how is the AI assisting this SDLC itself
-      controlled?".
+      Records model version, prompt-service configuration, human-gating posture,
+      and the data-residency boundary (self-hosted models; no source code or
+      regulated data leaves the trust boundary). Answers the auditor question
+      "how is the AI assisting this SDLC itself controlled?".
     family: gxp-csa
     jurisdiction: global
-    applicability: [all]
+    applicability: [ all ]
     citations:
       - adapter: clause
         framework: GAMP5-2E
         clause: AI/ML appendix
         edition_note: >-
-          GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering against a licensed
-          copy before citing in an audit response; text is never vendored here.
+          GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering
+          against a licensed copy before citing in an audit response; text is
+          never vendored here.
     implemented_by:
       - type: architecture
         ref: self-hosted-models
