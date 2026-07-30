@@ -9,7 +9,7 @@
     {
       "name": "opuspopuli-sdlc",
       "description": "Audit-ready AI-assisted SDLC: plan-first development, multi-lens review, behavioral verification, and HIPAA/SOC 2/Part 11 evidence generation.",
-      "source": ".",
+      "source": "./",
       "category": "workflow"
     }
   ]
