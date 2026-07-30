@@ -34,6 +34,13 @@ exception in the release validation pack.
 
 ## Control mapping
 
+> **Canonical source:** this table is a human-readable view of
+> [`controls/registry.yaml`](../controls/registry.yaml) — the machine-readable registry in which
+> every control is pinned to its authoritative source (eCFR / guidance documents by checksum;
+> copyrighted frameworks by clause ID only) and mapped to the skills/hooks that implement it.
+> Edit the registry, not this table. (Automated generation of this view — including per-row
+> registry IDs — lands with issue #2; until then the registry wins on any discrepancy.)
+
 | Framework | Control | How it's satisfied |
 |-----------|---------|--------------------|
 | **HIPAA** | PHI never in logs/prompts/fixtures | `op-phi-scan` + pre-push PHI gate + audit-logger PII masking |
