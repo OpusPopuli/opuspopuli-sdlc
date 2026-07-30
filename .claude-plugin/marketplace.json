@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "opuspopuli-sdlc",
+  "description": "Opus Populi org-wide SDLC workflow skills — audit-ready AI-assisted development lifecycle.",
+  "owner": {
+    "name": "Opus Populi"
+  },
+  "plugins": [
+    {
+      "name": "opuspopuli-sdlc",
+      "description": "Audit-ready AI-assisted SDLC: plan-first development, multi-lens review, behavioral verification, and HIPAA/SOC 2/Part 11 evidence generation.",
+      "source": ".",
+      "category": "workflow"
+    }
+  ]
+}

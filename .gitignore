@@ -1,0 +1,9 @@
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code local per-project state (keep skills/ and .claude-plugin/ tracked)
+.claude/
