@@ -5,9 +5,9 @@
 // development sandboxes may have restricted egress, in which case entries stay pin-pending.
 // Comments in registry.yaml are preserved (yaml Document API).
 import { readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { parseDocument, type Document } from "yaml";
+import { REGISTRY_PATH } from "./registry.ts";
 
 // text-mode normalization for HTML sources (e.g. statute pages): strip markup and collapse
 // whitespace so site-template churn doesn't fire false drift alarms. Checksums the words, not the page.
@@ -85,7 +85,7 @@ async function main() {
   const args = process.argv.slice(2);
   const allPending = args.includes("--all-pending");
   const targetId = args.find((a) => a.startsWith("CTL-"));
-  const registryPath = args.find((a) => a.endsWith(".yaml")) ?? join(process.cwd(), "controls", "registry.yaml");
+  const registryPath = args.find((a) => a.endsWith(".yaml")) ?? REGISTRY_PATH;
   if (!allPending && !targetId) {
     console.error("usage: pin.ts (--all-pending | CTL-XXX-000) [registry.yaml]");
     process.exit(2);
