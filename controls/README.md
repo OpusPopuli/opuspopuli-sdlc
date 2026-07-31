@@ -65,8 +65,47 @@ Each entry in `controls[]`:
 | `evidence[]` | Artifact paths the control produces in consuming repos. |
 | `status` | `active`, or `pin-pending` while any pinnable citation lacks its pin. `validate.ts` enforces consistency. |
 
-**Profiles:** a consuming repo declares which `families` apply to it. Controls outside the
-declared profile are inert for that repo — a repo with no EU exposure gets no EU gates.
+## Consuming-repo compliance profiles
+
+A consuming repo declares which framework families apply to it in a **compliance profile**,
+conventionally `.claude/compliance-profile.yaml`, validated against
+`schema/compliance-profile.schema.json`. Controls whose family is not declared are **inert** for
+that repo — no gate, no scan category, no evidence obligation. This is what lets one repo run a
+lean privacy-only gate while the plugin carries full multi-framework capability.
+
+```yaml
+# .claude/compliance-profile.yaml — the Opus Populi launch profile (CCPA-only + SOC 2)
+version: 1
+repo: opuspopuli
+families: [us-state-privacy, soc2]
+applicability: [ca-personal-information]
+```
+
+Worked examples live in [`controls/examples/`](examples/). Validate a profile against the registry:
+
+```
+npm run profile:check -- .claude/compliance-profile.yaml   # one file
+npm run profile:check                                        # all committed examples (used by CI)
+```
+
+**What "inert" is — honestly.** Inertness has two layers, and only the first is code-enforced:
+
+- **Code layer:** `validate-profile.ts` rejects a profile naming a family the registry lacks, and
+  `resolveProfile()` (in `profile.ts`) computes the exact active-vs-inert partition of controls,
+  data classes, and evidence obligations. This partition is unit-tested — inertness is
+  *demonstrable*, e.g. the Opus Populi profile provably activates SOC 2 and leaves HIPAA/Part 11/GxP
+  inert.
+- **Instruction layer:** the scan/review/validate skills honor the resolved profile because their
+  prose instructs the AI to — they are markdown, not a runtime sandbox. We do not claim otherwise.
+
+**Data classes and the scan.** Each `frameworks:` entry may list `data_classes` — the regulated-data
+categories that family brings into scope for `op-data-scan`. The scan applies the union of data
+classes across the profile's declared families (`hipaa → phi-pii`; packs add `us-state-privacy →
+ca-personal-information` in #8 and `gdpr → eu-personal-data` in #7).
+
+**No profile declared:** the default is the framework-agnostic lifecycle only (plans, change
+records, traceability always run); the strict PHI/PII scan lens is used, and evidence packs carry a
+visible "no compliance profile declared" note.
 
 ## Source adapters
 

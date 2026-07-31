@@ -20,16 +20,25 @@ profiles:
     - soc2
     - gxp-csa
     - iso-medical
+    - us-state-privacy
 
 # Display metadata for each family — the single source for the "Framework" column of the
 # generated control-mapping table in docs/compliance-model.md (issue #2). validate.ts fails if a
 # control uses a family with no entry here, so packs #7-#9 must add a label when they add a family.
+#
+# data_classes: the regulated-data categories a family brings into scope for op-data-scan. A
+# consuming repo's compliance profile selects families; the union of their data_classes is what the
+# scan looks for. Packs extend this: #8 adds ca-personal-information to us-state-privacy, #7 adds
+# eu-personal-data to gdpr.
 frameworks:
-  hipaa: { label: HIPAA, sort: 1 }
-  soc2: { label: SOC 2, sort: 2 }
-  part11: { label: 21 CFR Part 11, sort: 3 }
-  gxp-csa: { label: Part 11 / GxP (CSA), sort: 4 }
-  iso-medical: { label: ISO 62304 / 14971, sort: 5 }
+  hipaa: { label: HIPAA, sort: 1, data_classes: [ phi-pii ] }
+  soc2: { label: SOC 2, sort: 2, data_classes: [] }
+  part11: { label: 21 CFR Part 11, sort: 3, data_classes: [] }
+  gxp-csa: { label: Part 11 / GxP (CSA), sort: 4, data_classes: [] }
+  iso-medical: { label: ISO 62304 / 14971, sort: 5, data_classes: [] }
+  # Declared now so the Opus Populi launch profile validates; CCPA controls + the
+  # ca-personal-information data class arrive with #8.
+  us-state-privacy: { label: US state privacy (CCPA/CPRA), sort: 6, data_classes: [] }
 
 controls:
   - id: CTL-HIPAA-001
@@ -48,7 +57,7 @@ controls:
           checked: 2026-07-30
     implemented_by:
       - type: skill
-        ref: op-phi-scan
+        ref: op-data-scan
       - type: hook
         ref: pre-push-gate
         note: PHI gate runs on every push

@@ -1,0 +1,14 @@
+# Worked example — the Opus Populi launch profile.
+# Copy to .claude/compliance-profile.yaml in the consuming repo.
+#
+# Opus Populi launches CCPA-only (inaugural region: California) plus SOC 2 change management.
+# With this profile, the regulated-data scan applies California personal-information categories
+# (added by #8) and the SOC 2 change-management controls are active — while HIPAA, 21 CFR Part 11,
+# GxP, and ISO controls are INERT: no gates, no scan categories, no evidence obligations.
+version: 1
+repo: opuspopuli
+families:
+  - us-state-privacy
+  - soc2
+applicability:
+  - ca-personal-information

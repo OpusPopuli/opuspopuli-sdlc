@@ -23,14 +23,19 @@ override is meant to be logged as an exception in `op-validate`'s release pack).
 Add these stages to `.husky/pre-push` in the consuming repo. The reference implementation lives in the
 `opuspopuli` monorepo's `.husky/pre-push`; copy it and adjust package-manager commands per repo.
 
-The AI security-review stage must include the HIPAA lens:
+**Scope framework-conditional stages to the repo's compliance profile.** The AI security-review
+stage's regulated-data lens applies the data classes the repo's profile
+(`.claude/compliance-profile.yaml`) makes active. When `hipaa` is declared, include the HIPAA lens:
 
 > PHI/PII exposure — real personal/health data (names, DOB, SSN, medical/insurance IDs, addresses) written
 > to logs, error messages, telemetry attributes, test fixtures, or seed data without masking, or
 > interpolated into a model prompt. Synthetic/faker data is fine; real data is not.
 
-This makes the HIPAA data-handling control **enforced at push time**, not merely available as the
-`op-phi-scan` skill.
+When `us-state-privacy` is declared, apply the CCPA personal-information lens (broader than PII); when
+`gdpr` is declared, the EU personal-data lens. With no profile, default to the strict PHI/PII lens
+above. The framework-agnostic stages (coverage, duplication, lint, dependency/secret scans, AI
+code-review) always run. This makes the active data-handling control **enforced at push time**, not
+merely available as the `op-data-scan` skill.
 
 ## Maintaining this plugin repo
 
