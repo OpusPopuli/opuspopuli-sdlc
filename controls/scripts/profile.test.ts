@@ -6,16 +6,19 @@ import { join } from "node:path";
 
 const reg = loadRegistry();
 
-// Headline acceptance test: the Opus Populi launch profile activates only its declared families and
-// leaves everything else inert.
-test("Opus Populi profile activates us-state-privacy + soc2, leaves HIPAA/Part 11/GxP/ISO inert", () => {
+// Headline acceptance test: the Opus Populi launch profile activates its declared families —
+// including the CCPA controls (#8) — and leaves everything else inert.
+test("Opus Populi profile activates CCPA + SOC 2 controls, leaves HIPAA/Part 11/GxP/ISO inert", () => {
   const profile = loadProfile(join(EXAMPLE_PROFILES_DIR, "opuspopuli.compliance-profile.yaml"));
   const r = resolveProfile(reg, profile);
 
   assert.deepEqual(r.activeFamilies, ["soc2", "us-state-privacy"]);
 
-  // SOC 2 controls are active.
-  assert.ok(r.activeControls.some((c) => c.id === "CTL-SOC2-001"));
+  // SOC 2 and all four CCPA controls are active.
+  const activeIds = new Set(r.activeControls.map((c) => c.id));
+  for (const id of ["CTL-SOC2-001", "CTL-CCPA-001", "CTL-CCPA-002", "CTL-CCPA-003", "CTL-CCPA-004"]) {
+    assert.ok(activeIds.has(id), `${id} should be active for the Opus Populi profile`);
+  }
   // Every HIPAA, Part 11, GxP, and ISO control is inert.
   const inertIds = new Set(r.inertControls.map((c) => c.id));
   for (const id of ["CTL-HIPAA-001", "CTL-HIPAA-002", "CTL-P11-001", "CTL-P11-002", "CTL-CSA-001", "CTL-AIQ-001", "CTL-ISO-001"]) {
@@ -23,8 +26,8 @@ test("Opus Populi profile activates us-state-privacy + soc2, leaves HIPAA/Part 1
   }
   // No HIPAA control leaks into the active set.
   assert.ok(!r.activeControls.some((c) => c.family === "hipaa"));
-  // us-state-privacy has no controls yet (#8), so no CCPA data classes are active yet.
-  assert.deepEqual(r.activeDataClasses, []);
+  // The CCPA data class is now active; PHI is not.
+  assert.deepEqual(r.activeDataClasses, ["ca-personal-information"]);
 });
 
 test("a HIPAA/GxP profile activates PHI data class and Part 11 controls", () => {
@@ -55,10 +58,16 @@ test("both committed example profiles validate without errors", () => {
 });
 
 test("applicability that no active control uses is a warning, not an error", () => {
-  // ca-personal-information has no control until #8, so the Opus Populi profile warns but passes.
-  const findings = validateProfile(reg, { version: 1, families: ["us-state-privacy"], applicability: ["ca-personal-information"] });
+  // A made-up applicability value warns but does not error (open vocabulary).
+  const findings = validateProfile(reg, { version: 1, families: ["us-state-privacy"], applicability: ["not-a-real-context"] });
   assert.deepEqual(findings.filter((f) => f.level === "error"), []);
   assert.ok(findings.some((f) => f.level === "warning"));
+});
+
+test("the Opus Populi example profile now validates with no warnings (CCPA controls landed)", () => {
+  const profile = loadProfile(join(EXAMPLE_PROFILES_DIR, "opuspopuli.compliance-profile.yaml"));
+  const findings = validateProfile(reg, profile);
+  assert.deepEqual(findings, [], "ca-personal-information is now used by active CCPA controls");
 });
 
 test("resolve partitions every control into exactly active or inert", () => {

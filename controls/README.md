@@ -100,8 +100,13 @@ npm run profile:check                                        # all committed exa
 
 **Data classes and the scan.** Each `frameworks:` entry may list `data_classes` — the regulated-data
 categories that family brings into scope for `op-data-scan`. The scan applies the union of data
-classes across the profile's declared families (`hipaa → phi-pii`; packs add `us-state-privacy →
-ca-personal-information` in #8 and `gdpr → eu-personal-data` in #7).
+classes across the profile's declared families (`hipaa → phi-pii`, `us-state-privacy →
+ca-personal-information`; `gdpr → eu-personal-data` arrives with #7).
+
+**Extensible state-privacy family.** The `us-state-privacy` family holds California's CCPA/CPRA
+controls (`CTL-CCPA-*`). It is designed to grow: another state law (e.g. Virginia CDPA, Colorado
+CPA) is added as new `CTL-<STATE>-*` control entries in the same family — no schema change, no new
+adapter. A consuming repo in that state adds the family to its profile; nothing else moves.
 
 **No profile declared:** the default is the framework-agnostic lifecycle only (plans, change
 records, traceability always run); the strict PHI/PII scan lens is used, and evidence packs carry a
