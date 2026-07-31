@@ -36,6 +36,12 @@
           "sort": {
             "type": "integer",
             "description": "Row-grouping order in the generated table (ascending)."
+          },
+          "data_classes": {
+            "type": "array",
+            "description": "Regulated-data categories this family brings into scope for op-data-scan (#10). A consuming profile's declared families union their data_classes to determine what the scan looks for. Open vocabulary; packs extend it (e.g. ca-personal-information, eu-personal-data).",
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
           }
         }
       }

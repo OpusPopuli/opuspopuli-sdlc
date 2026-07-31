@@ -1,0 +1,13 @@
+# Worked example — a health/GxP consumer (contrast to the CCPA-only launch profile).
+# A repo handling US PHI in a regulated-records context: the regulated-data scan applies PHI/PII
+# categories, Part 11 traceability + e-signature controls and the CSA validation pack are active.
+version: 1
+repo: example-health-app
+families:
+  - hipaa
+  - part11
+  - soc2
+  - gxp-csa
+applicability:
+  - us-phi
+  - us-regulated-records

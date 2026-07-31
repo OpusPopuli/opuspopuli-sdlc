@@ -39,6 +39,7 @@ export interface Control {
 export interface FrameworkLabel {
   label: string;
   sort: number;
+  data_classes?: string[];
 }
 
 export interface Registry {
