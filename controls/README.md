@@ -137,7 +137,27 @@ violation, not just a policy.
 
 Development sandboxes may have restricted egress (ecfr.gov is blocked in ours), so entries are
 seeded `pin-pending` and `pin.ts` runs where the network allows — normally a GitHub-hosted
-runner via `workflow_dispatch` (wired up with #4). `pin.ts` preserves YAML comments and flips
+runner via `workflow_dispatch`. `pin.ts` preserves YAML comments and flips
 `status` to `active` when a control's last pin lands. A `pin-pending` entry is an honest
 statement that the citation has not yet been verified against the source — never hand-write a
 pin block.
+
+## Upstream drift watch
+
+`.github/workflows/upstream-drift.yml` runs weekly (and on `workflow_dispatch`) and calls
+`check-upstream.ts`, which compares the **live** authoritative sources against the committed pins —
+eCFR latest amendment dates and FDA/CPPA document checksums, via the same primitives `pin.ts` uses.
+
+```
+npm run drift:dry-run   # fetch live, print drift, file nothing (safe to run anywhere with egress)
+npm run drift:check     # the CI entry point — files issues (needs GITHUB_TOKEN + GITHUB_REPOSITORY)
+```
+
+When a source has changed, the watcher **files a triage-ready GitHub issue** (one per source,
+deduped by title, labelled `upstream-drift` and otherwise unlabelled so `/op-issue-triage` picks it
+up) naming the old/new value and the affected control IDs. It **never re-pins automatically** — a
+regulation change is reviewed through the SDLC's own lifecycle (triage → plan → fix, where re-pinning
+via `npm run pin` is part of the fix), not silently absorbed. On a fetch/API error it files a single
+"watcher broken" issue rather than passing green. Copyrighted frameworks (`clause` adapter) are not
+polled — their text is not fetchable, so new-edition checks stay manual. This is the automated,
+CSA-native replacement for a manual periodic-review ceremony.
