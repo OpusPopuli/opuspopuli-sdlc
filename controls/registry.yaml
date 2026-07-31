@@ -36,12 +36,7 @@ frameworks:
   part11: { label: 21 CFR Part 11, sort: 3, data_classes: [] }
   gxp-csa: { label: Part 11 / GxP (CSA), sort: 4, data_classes: [] }
   iso-medical: { label: ISO 62304 / 14971, sort: 5, data_classes: [] }
-  us-state-privacy:
-    {
-      label: US state privacy (CCPA/CPRA),
-      sort: 6,
-      data_classes: [ ca-personal-information ]
-    }
+  us-state-privacy: { label: US state privacy (CCPA/CPRA), sort: 6, data_classes: [ ca-personal-information ] }
 
 controls:
   - id: CTL-HIPAA-001
@@ -71,8 +66,7 @@ controls:
     status: active
 
   - id: CTL-HIPAA-002
-    title: Data residency and minimum necessary — no PHI or code to third-party
-      model vendors
+    title: Data residency and minimum necessary — no PHI or code to third-party model vendors
     family: hipaa
     jurisdiction: us
     applicability: [ us-phi ]
@@ -120,8 +114,7 @@ controls:
     status: active
 
   - id: CTL-SOC2-001
-    title: Change management — plan, independent review, enforced gate, recorded
-      change
+    title: Change management — plan, independent review, enforced gate, recorded change
     family: soc2
     jurisdiction: global
     applicability: [ all ]
@@ -129,8 +122,7 @@ controls:
       - adapter: clause
         framework: SOC2-TSC-2017
         clause: CC8.1
-        edition_note: AICPA Trust Services Criteria (2017, incl. 2022 revised points of
-          focus)
+        edition_note: AICPA Trust Services Criteria (2017, incl. 2022 revised points of focus)
     implemented_by:
       - type: skill
         ref: op-issue-plan
@@ -193,8 +185,7 @@ controls:
     status: active
 
   - id: CTL-P11-002
-    title: Electronic signatures — approvals captured as signed who/when/meaning
-      records
+    title: Electronic signatures — approvals captured as signed who/when/meaning records
     family: part11
     jurisdiction: us
     applicability: [ us-regulated-records ]
@@ -229,24 +220,18 @@ controls:
           amendment_date: 2016-12-29
           checked: 2026-07-30
       - adapter: document
-        name: FDA guidance — Computer Software Assurance for Production and Quality
-          System Software
+        name: FDA guidance — Computer Software Assurance for Production and Quality System Software
         url: https://www.fda.gov/media/188844/download
         normalization: raw
         auto_poll: false
-        note: Final guidance PDF (finalized 2025-09-24). fda.gov's CDN 404s datacenter
-          IPs, so the upstream drift watch cannot re-fetch this from CI — the
-          sha256 records the last manually-verified state, and the fedreg
-          citation below is the automated signal for revisions.
+        note: Final guidance PDF (finalized 2025-09-24). fda.gov's CDN 404s datacenter IPs, so the upstream drift watch cannot re-fetch this from CI — the sha256 records the last manually-verified state, and the fedreg citation below is the automated signal for revisions.
         pinned:
           sha256: 11e2e21f5eb226b56a578da44e732965a2318e9b983422c6a58e51bc7b2e223a
           retrieved: 2026-07-30
       - adapter: fedreg
         name: FDA CSA guidance — Federal Register docket
         docket: FDA-2022-D-0795
-        note: Free federalregister.gov API (no key, CI-reachable). A new document on
-          this docket signals a revision to the CSA guidance — the automated
-          drift signal that the IP-blocked PDF above cannot provide.
+        note: Free federalregister.gov API (no key, CI-reachable). A new document on this docket signals a revision to the CSA guidance — the automated drift signal that the IP-blocked PDF above cannot provide.
         pinned:
           latest_document_number: 2025-18468
           latest_publication_date: 2025-09-24
@@ -279,13 +264,9 @@ controls:
     status: active
 
   - id: CTL-AIQ-001
-    title: AI tool qualification — the AI tooling itself is qualified for its
-      intended use
+    title: AI tool qualification — the AI tooling itself is qualified for its intended use
     description: >-
-      Records model version, prompt-service configuration, human-gating posture,
-      and the data-residency boundary (self-hosted models; no source code or
-      regulated data leaves the trust boundary). Answers the auditor question
-      "how is the AI assisting this SDLC itself controlled?".
+      Records model version, prompt-service configuration, human-gating posture, and the data-residency boundary (self-hosted models; no source code or regulated data leaves the trust boundary). Answers the auditor question "how is the AI assisting this SDLC itself controlled?".
     family: gxp-csa
     jurisdiction: global
     applicability: [ all ]
@@ -294,9 +275,7 @@ controls:
         framework: GAMP5-2E
         clause: AI/ML appendix
         edition_note: >-
-          GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering
-          against a licensed copy before citing in an audit response; text is
-          never vendored here.
+          GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering against a licensed copy before citing in an audit response; text is never vendored here.
     implemented_by:
       - type: architecture
         ref: self-hosted-models
@@ -325,19 +304,15 @@ controls:
         name: Cal. Civ. Code § 1798.140 (CCPA/CPRA definitions)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140
         normalization: text
-        note: Defines "personal information" (broader than classic PII) and "sensitive
-          personal information"; anchors what op-data-scan looks for.
+        note: Defines "personal information" (broader than classic PII) and "sensitive personal information"; anchors what op-data-scan looks for.
         pinned:
           sha256: 989c984ff5013028214e1c1e59bdf73d4cb7beb9191975c9082325021bbc37c6
           retrieved: 2026-07-31
       - adapter: document
-        name: CPPA final CCPA regulations, Cal. Code Regs. tit. 11 div. 6 (text of
-          2023-03-29)
+        name: CPPA final CCPA regulations, Cal. Code Regs. tit. 11 div. 6 (text of 2023-03-29)
         url: https://cppa.ca.gov/regulations/pdf/20230329_final_regs_text.pdf
         normalization: raw
-        note: Regulations elaborating the statutory definitions and business handling
-          duties. Dated final-text PDF — stable bytes; a newer adopted text is a
-          drift signal (#4).
+        note: Regulations elaborating the statutory definitions and business handling duties. Dated final-text PDF — stable bytes; a newer adopted text is a drift signal (#4).
         pinned:
           sha256: 9bbda51893703afe9ef45249905e09ab1d278eaba2a6158af17e2c5f39696e72
           retrieved: 2026-07-31
@@ -351,11 +326,7 @@ controls:
   - id: CTL-CCPA-002
     title: Consumer rights — know, delete, correct, opt-out of sale/sharing
     description: >-
-      A product/legal obligation, not an SDLC gate: the SDLC plans and reviews
-      changes that touch personal information so these rights are preserved, but
-      it does not itself implement the rights UI. Mapped to op-issue-plan
-      (data-handling planning) and op-review (rights-preservation review),
-      honestly — no gate "enforces" a consumer-rights feature.
+      A product/legal obligation, not an SDLC gate: the SDLC plans and reviews changes that touch personal information so these rights are preserved, but it does not itself implement the rights UI. Mapped to op-issue-plan (data-handling planning) and op-review (rights-preservation review), honestly — no gate "enforces" a consumer-rights feature.
     family: us-state-privacy
     jurisdiction: us-ca
     applicability: [ ca-personal-information ]
@@ -395,8 +366,7 @@ controls:
         name: Cal. Civ. Code § 1798.150 (private right of action for breaches)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.150
         normalization: text
-        note: Ties reasonable-security failures to breach liability; the security-review
-          lens and the incident record are the SDLC touchpoints.
+        note: Ties reasonable-security failures to breach liability; the security-review lens and the incident record are the SDLC touchpoints.
         pinned:
           sha256: c8decd72ba1dba30b04655b7dcd7d2836f2726233991c73b5213aac137d5029e
           retrieved: 2026-07-31
@@ -413,20 +383,16 @@ controls:
   - id: CTL-CCPA-004
     title: Service-provider and contractor contract requirements
     description: >-
-      A contractual/organizational control, not an SDLC gate — satisfied by
-      subprocessor/service- provider agreements, tracked here for completeness.
-      No skill "enforces" a contract; mapped to architecture posture honestly.
+      A contractual/organizational control, not an SDLC gate — satisfied by subprocessor/service- provider agreements, tracked here for completeness. No skill "enforces" a contract; mapped to architecture posture honestly.
     family: us-state-privacy
     jurisdiction: us-ca
     applicability: [ ca-personal-information ]
     citations:
       - adapter: document
-        name: Cal. Civ. Code § 1798.140(ag) (service provider definition and contract
-          terms)
+        name: Cal. Civ. Code § 1798.140(ag) (service provider definition and contract terms)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140
         normalization: text
-        note: Same section as CTL-CCPA-001; the (ag) subdivision sets required
-          service-provider contract terms.
+        note: Same section as CTL-CCPA-001; the (ag) subdivision sets required service-provider contract terms.
         pinned:
           sha256: 989c984ff5013028214e1c1e59bdf73d4cb7beb9191975c9082325021bbc37c6
           retrieved: 2026-07-31

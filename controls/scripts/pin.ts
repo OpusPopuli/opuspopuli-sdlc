@@ -7,7 +7,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { parseDocument, type Document } from "yaml";
-import { REGISTRY_PATH } from "./registry.ts";
+import { REGISTRY_PATH, REGISTRY_YAML_OPTIONS } from "./registry.ts";
 
 // text-mode normalization for HTML sources (e.g. statute pages): strip markup and collapse
 // whitespace so site-template churn doesn't fire false drift alarms. Checksums the words, not the page.
@@ -143,7 +143,7 @@ async function main() {
     if (allPinned) control.set("status", "active");
   }
 
-  writeFileSync(registryPath, doc.toString());
+  writeFileSync(registryPath, doc.toString(REGISTRY_YAML_OPTIONS));
   console.log(`${pinnedCount} citation(s) pinned`);
   for (const f of failures) console.error(`failed — ${f}`);
   if (failures.length > 0) process.exit(1);

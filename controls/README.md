@@ -142,6 +142,10 @@ runner via `workflow_dispatch`. `pin.ts` preserves YAML comments and flips
 statement that the citation has not yet been verified against the source — never hand-write a
 pin block.
 
+`pin.ts` writes registry.yaml in a **canonical serialized form** (`lineWidth: 0`, no line-wrapping)
+so a re-pin diffs only the changed pin values, not re-flowed paragraphs. A test enforces the
+committed file is already canonical; if you hand-edit and it drifts, run `npm run registry:format`.
+
 ## Upstream drift watch
 
 `.github/workflows/upstream-drift.yml` runs weekly (and on `workflow_dispatch`) and calls
