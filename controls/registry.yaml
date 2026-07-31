@@ -36,9 +36,12 @@ frameworks:
   part11: { label: 21 CFR Part 11, sort: 3, data_classes: [] }
   gxp-csa: { label: Part 11 / GxP (CSA), sort: 4, data_classes: [] }
   iso-medical: { label: ISO 62304 / 14971, sort: 5, data_classes: [] }
-  # Declared now so the Opus Populi launch profile validates; CCPA controls + the
-  # ca-personal-information data class arrive with #8.
-  us-state-privacy: { label: US state privacy (CCPA/CPRA), sort: 6, data_classes: [] }
+  us-state-privacy:
+    {
+      label: US state privacy (CCPA/CPRA),
+      sort: 6,
+      data_classes: [ ca-personal-information ]
+    }
 
 controls:
   - id: CTL-HIPAA-001
@@ -292,6 +295,132 @@ controls:
       - type: skill
         ref: op-validate
         note: qualification record referenced in the release validation pack
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: active
+
+  # US state privacy pack (#8). California is the inaugural region; the family is designed to be
+  # extended — another state law (e.g. Virginia CDPA) is new CTL-<STATE>-* entries here, no schema
+  # or adapter change. CA statutes/regulations are government works (public domain); sources are
+  # checksummed via the document adapter, never vendored.
+  - id: CTL-CCPA-001
+    title: Personal and sensitive personal information — definitions and handling
+    family: us-state-privacy
+    jurisdiction: us-ca
+    applicability: [ ca-personal-information ]
+    citations:
+      - adapter: document
+        name: Cal. Civ. Code § 1798.140 (CCPA/CPRA definitions)
+        url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140
+        normalization: text
+        note: Defines "personal information" (broader than classic PII) and "sensitive
+          personal information"; anchors what op-data-scan looks for.
+        pinned:
+          sha256: 989c984ff5013028214e1c1e59bdf73d4cb7beb9191975c9082325021bbc37c6
+          retrieved: 2026-07-31
+      - adapter: document
+        name: CPPA final CCPA regulations, Cal. Code Regs. tit. 11 div. 6 (text of
+          2023-03-29)
+        url: https://cppa.ca.gov/regulations/pdf/20230329_final_regs_text.pdf
+        normalization: raw
+        note: Regulations elaborating the statutory definitions and business handling
+          duties. Dated final-text PDF — stable bytes; a newer adopted text is a
+          drift signal (#4).
+        pinned:
+          sha256: 9bbda51893703afe9ef45249905e09ab1d278eaba2a6158af17e2c5f39696e72
+          retrieved: 2026-07-31
+    implemented_by:
+      - type: skill
+        ref: op-data-scan
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: active
+
+  - id: CTL-CCPA-002
+    title: Consumer rights — know, delete, correct, opt-out of sale/sharing
+    description: >-
+      A product/legal obligation, not an SDLC gate: the SDLC plans and reviews
+      changes that touch personal information so these rights are preserved, but
+      it does not itself implement the rights UI. Mapped to op-issue-plan
+      (data-handling planning) and op-review (rights-preservation review),
+      honestly — no gate "enforces" a consumer-rights feature.
+    family: us-state-privacy
+    jurisdiction: us-ca
+    applicability: [ ca-personal-information ]
+    citations:
+      - adapter: document
+        name: Cal. Civ. Code § 1798.100 (general duties; right to know)
+        url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.100
+        normalization: text
+        note: Anchor for the consumer-rights cluster §§ 1798.100–.121.
+        pinned:
+          sha256: 81ae0994dcd750fad250147a50116b947e7dab710062bab2e7ba7104672d92cb
+          retrieved: 2026-07-31
+      - adapter: document
+        name: Cal. Civ. Code § 1798.120 (right to opt out of sale/sharing)
+        url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.120
+        normalization: text
+        pinned:
+          sha256: c2944f38028af1d89b5dff55777fbc5c5dda1813d3fdc0fa6ee1162d26770aac
+          retrieved: 2026-07-31
+    implemented_by:
+      - type: skill
+        ref: op-issue-plan
+      - type: skill
+        ref: op-review
+    evidence:
+      - docs/plans/*.md
+      - docs/compliance/changes/*-change-record.md
+    status: active
+
+  - id: CTL-CCPA-003
+    title: Reasonable security and breach liability
+    family: us-state-privacy
+    jurisdiction: us-ca
+    applicability: [ ca-personal-information ]
+    citations:
+      - adapter: document
+        name: Cal. Civ. Code § 1798.150 (private right of action for breaches)
+        url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.150
+        normalization: text
+        note: Ties reasonable-security failures to breach liability; the security-review
+          lens and the incident record are the SDLC touchpoints.
+        pinned:
+          sha256: c8decd72ba1dba30b04655b7dcd7d2836f2726233991c73b5213aac137d5029e
+          retrieved: 2026-07-31
+    implemented_by:
+      - type: skill
+        ref: op-review
+      - type: skill
+        ref: op-hotfix
+        note: a breach becomes an incident record with the follow-up backlog loop
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: active
+
+  - id: CTL-CCPA-004
+    title: Service-provider and contractor contract requirements
+    description: >-
+      A contractual/organizational control, not an SDLC gate — satisfied by
+      subprocessor/service- provider agreements, tracked here for completeness.
+      No skill "enforces" a contract; mapped to architecture posture honestly.
+    family: us-state-privacy
+    jurisdiction: us-ca
+    applicability: [ ca-personal-information ]
+    citations:
+      - adapter: document
+        name: Cal. Civ. Code § 1798.140(ag) (service provider definition and contract
+          terms)
+        url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140
+        normalization: text
+        note: Same section as CTL-CCPA-001; the (ag) subdivision sets required
+          service-provider contract terms.
+        pinned:
+          sha256: 989c984ff5013028214e1c1e59bdf73d4cb7beb9191975c9082325021bbc37c6
+          retrieved: 2026-07-31
+    implemented_by:
+      - type: architecture
+        ref: subprocessor-agreements
     evidence:
       - docs/compliance/releases/*-validation.md
     status: active
