@@ -18,7 +18,7 @@ control mapping):
 - **Understand** — `op-issue-research`, `op-issue-spike`
 - **Plan** — `op-issue-plan` (persists a plan-of-record + risk register + data classification)
 - **Build** — `op-issue-implement`, `op-issue-fix`
-- **Verify** — `op-verify`, `op-review`, `op-security`, `op-phi-scan`, `op-pr-prep`, `op-ci`
+- **Verify** — `op-verify`, `op-review`, `op-security`, `op-data-scan`, `op-pr-prep`, `op-ci`
 - **Trace / Control** — `op-trace` (RTM), `op-change-record` (signed change control)
 - **Ship** — `op-release`, `op-validate` (release validation pack)
 - **Operate** — `op-hotfix` (incident record + backlog loop)

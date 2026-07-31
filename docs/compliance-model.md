@@ -21,7 +21,7 @@ evidence an auditor wants falls out of the pipeline instead of being reconstruct
 | Understand | `op-issue-research`, `op-issue-spike` | Investigation record, spike docs |
 | Plan | `op-issue-plan` | **Persisted plan-of-record** + data classification + risk register |
 | Build | `op-issue-implement`, `op-issue-fix` | Atomic commits linked to the issue |
-| Verify | `op-verify`, `op-review`, `op-security`, `op-phi-scan`, `op-pr-prep`, `op-ci` | Behavioral + review + security + PHI evidence |
+| Verify | `op-verify`, `op-review`, `op-security`, `op-data-scan`, `op-pr-prep`, `op-ci` | Behavioral + review + security + regulated-data evidence |
 | Trace | `op-trace` | **Requirements Traceability Matrix** |
 | Control | `op-change-record` | **Change-control record** (signed) |
 | Ship | `op-release`, `op-validate` | Changelog + **release validation pack** |
@@ -47,7 +47,7 @@ exception in the release validation pack.
 
 | Control ID | Framework | Control | Implemented by |
 |------------|-----------|---------|----------------|
-| `CTL-HIPAA-001` | HIPAA | PHI never appears in logs, prompts, or fixtures | `op-phi-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
+| `CTL-HIPAA-001` | HIPAA | PHI never appears in logs, prompts, or fixtures | `op-data-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
 | `CTL-HIPAA-002` | HIPAA | Data residency and minimum necessary — no PHI or code to third-party model vendors | self-hosted-models (arch), private-prompt-service (arch), `op-validate` |
 | `CTL-HIPAA-003` | HIPAA | Access to PHI is restricted and reviewed at the API surface | `op-review` |
 | `CTL-SOC2-001` | SOC 2 | Change management — plan, independent review, enforced gate, recorded change | `op-issue-plan`, `op-review`, `pre-push-gate` (hook), `op-change-record` |
