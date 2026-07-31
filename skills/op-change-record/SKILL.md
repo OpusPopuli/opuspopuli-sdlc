@@ -14,7 +14,7 @@ Fill every field from real evidence (git, GitHub MCP, the persisted plan) — ma
 - **Author(s)** and **Reviewer(s)** (from git + PR reviews) — and the **separation-of-duties status**
   (independent review vs. self-review needing countersignature)
 - **What changed and why** (one paragraph, from the plan + diff)
-- **Data classification** — PHI / PII / public; if regulated, the `/op-phi-scan` result reference
+- **Data classification** — PHI / PII / public; if regulated, the `/op-data-scan` result reference
 - **Risk register** — carried from `docs/plans/<issue>-*.md` (severity × likelihood → mitigation)
 - **Verification evidence** — test + coverage result, and the `/op-verify` behavioral result
 - **Security evidence** — `/op-security` result and pre-push gate outcome

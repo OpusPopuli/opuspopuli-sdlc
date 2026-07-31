@@ -8,6 +8,14 @@ Assemble the validation evidence pack for release $ARGUMENTS — the "binder" an
 the Part 11 / GxP computer-software-assurance idea applied lightly: show that everything in this release
 was planned, reviewed, tested, verified, and screened for regulated-data exposure, with evidence.
 
+**Scope to the repo's compliance profile.** Read `.claude/compliance-profile.yaml` (see
+`controls/README.md` in the `opuspopuli-sdlc` plugin) and record which framework families are active.
+The pack's framework-specific sections (HIPAA, Part 11, GxP, privacy) are included only for active
+families; sections for inactive families are omitted with a one-line "not in scope for this repo's
+profile" note rather than left blank. Framework-agnostic evidence (plans, change records,
+traceability, test results) is always included. **If no profile is declared, state that plainly in
+the header** and include only the framework-agnostic evidence.
+
 Collect, for every change since the previous release tag (use `/op-release`'s PR list as the index):
 
 1. **Scope** — list of PRs/issues in this release, each with its data classification
@@ -18,9 +26,11 @@ Collect, for every change since the previous release tag (use `/op-release`'s PR
 4. **Verification & validation** — aggregate test results, coverage vs. the enforced floors, and the
    `/op-verify` behavioral outcomes
 5. **Security** — the `/op-security` results (CVE/Trivy/gitleaks) and the pre-push gate outcomes
-6. **HIPAA data handling** — the `/op-phi-scan` results across the release; explicitly state that no
-   critical/high PHI-exposure findings remain open. Note the data-residency posture (self-hosted Ollama +
-   private prompt-service — no PHI/code sent to a third-party model vendor)
+6. **Regulated-data handling** — the `/op-data-scan` results across the release, for the data classes
+   the repo's compliance profile makes active; explicitly state that no critical/high exposure
+   findings remain open. Note the data-residency posture (self-hosted Ollama + private prompt-service
+   — no regulated data or code sent to a third-party model vendor). When `hipaa` is active this is the
+   HIPAA data-handling control's evidence.
 7. **Risk** — the consolidated risk register across the release and the status of each mitigation
 8. **Exceptions** — every gap, waiver, or `--no-verify` override in this release, with justification.
    An honest exceptions list is mandatory; an evidence pack that hides gaps is a finding, not a pass.

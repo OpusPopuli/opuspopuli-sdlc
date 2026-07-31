@@ -9,7 +9,7 @@ Prepare the current branch for a pull request.
 1. Run: pnpm lint && pnpm test && pnpm build
 2. Review the full diff against the base branch — flag anything unexpected
 3. Check for: console.log, debug flags, TODO comments, hardcoded secrets, skipped tests
-4. Run `/op-phi-scan` — no critical/high PHI/PII exposure may remain
+4. Run `/op-data-scan` — no critical/high regulated-data exposure may remain
 5. Verify GraphQL schema changes don't break federation (check gateway compatibility)
 6. Confirm no new dependencies conflict with AGPL-3.0 license
 7. Draft a PR description:

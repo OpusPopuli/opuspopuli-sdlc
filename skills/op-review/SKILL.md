@@ -11,8 +11,11 @@ Where useful, spawn parallel subagents (one per lens) so each looks with fresh e
 
 - **Correctness** — does it do what the issue requires? Null/undefined on hot paths, empty arrays, race conditions
 - **Security** — injection, auth/HMAC/CSRF bypass, SSRF, over-exposed data in GraphQL resolvers
-- **Regulated-data handling (HIPAA)** — does any PHI/PII reach logs, error messages, prompts, fixtures, seed
-  data, or an over-broad GraphQL field? Is field-level access appropriately restricted? (See `/op-phi-scan`.)
+- **Regulated-data handling** — does any regulated data reach logs, error messages, prompts, fixtures, seed
+  data, or an over-broad GraphQL field? Is field-level access appropriately restricted? Scope this lens to
+  the data classes the repo's compliance profile makes active (`.claude/compliance-profile.yaml`) — PHI/PII
+  when `hipaa` is declared, CCPA personal information when `us-state-privacy` is declared, and so on. With
+  no profile, default to the strict PHI/PII lens. (See `/op-data-scan`.)
 - **Performance** — N+1 queries, missing indexes, large payloads
 - **TypeScript strictness** — no implicit `any`, proper typing
 - **Test coverage** — are the important paths (including the regulated-data paths) tested?
