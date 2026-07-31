@@ -17,6 +17,30 @@ A plausible runtime: **GitHub Actions using GitHub's own AI (GitHub Models)** as
 engine — so the assessment runs where the code already lives, on the platform's model. (That would
 be a *third* AI system in the taxonomy — see "AI qualification" below.)
 
+## The full vision: both sides of one coin
+
+This is not a bolt-on feature; it's the second half of a single operating model:
+
+- **Upstream** — good engineering practices, AI-authored, evidence emitted as a byproduct. *(Built.)*
+- **Downstream** — QA automation, a **different** AI assessing/attesting the evidence. *(This note.)*
+
+The human role is **symmetric on both ends and confined to high-value judgment**: gate approval
+upstream, attestation downstream — and **zero heavyweight paper-pushing in between**. That symmetry
+is CSA applied end-to-end: spend human effort on critical thinking, not ceremony — on the *whole*
+value chain, not just the dev half.
+
+Two properties make this more than a slogan:
+
+- **The two-AI split is load-bearing.** One AI authors, a *different* AI assesses. The separation is
+  what provides **independence** — the answer to the "fox guarding the henhouse" objection below. An
+  assessment from the same model that wrote the evidence isn't credible; a separate assessor's is.
+- **It maps to how a regulated org is actually staffed.** A CRO (or any GxP shop) runs *both* an
+  engineering population and a QA/validation population, and today pays humans to push paper on both
+  ends — engineers writing validation docs, QA re-checking them by hand before every audit. The
+  proposition "free your QA staff from the paper-pushing and point them at the judgment calls" is
+  aimed squarely at what leadership of that world is measured on. It reframes the work from "a dev
+  tool" to "a rethink of the eng + QA operating model."
+
 ## Why assessment is the weak link (authoring wasn't)
 
 Authoring is comparatively safe: the AI helps **produce** artifacts with a human at every gate, and
