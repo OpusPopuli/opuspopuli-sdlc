@@ -53,3 +53,9 @@ export interface Registry {
 export function loadRegistry(path: string = REGISTRY_PATH): Registry {
   return parse(readFileSync(path, "utf8")) as Registry;
 }
+
+// Canonical serialization options for registry.yaml (#14). lineWidth: 0 disables line-wrapping so a
+// re-pin — or any edit — produces a minimal diff (only the changed lines) instead of re-flowing
+// whole wrapped paragraphs. pin.ts writes with these options; a round-trip test enforces that the
+// committed file is already in this form, so scheduled re-pins (#4) stay reviewable.
+export const REGISTRY_YAML_OPTIONS = { lineWidth: 0 } as const;
