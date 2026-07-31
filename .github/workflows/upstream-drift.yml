@@ -1,0 +1,35 @@
+name: upstream-drift
+
+# Polls the pinned authoritative sources (eCFR amendment dates, FDA/CPPA document checksums) and
+# files a triage-ready issue per changed source (issue #4). It compares; it never re-pins — a
+# regulation change becomes an intake item that flows through the SDLC, reviewed not silently
+# absorbed. Copyrighted frameworks (GAMP 5, SOC 2 TSC, ISO) are out of scope: their text is not
+# fetchable, so new-edition checks stay manual.
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # weekly, Mondays 06:17 UTC (off-the-hour to be a polite API client)
+  workflow_dispatch:
+
+concurrency:
+  group: upstream-drift
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: Check authoritative sources for drift and file issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run drift:check
