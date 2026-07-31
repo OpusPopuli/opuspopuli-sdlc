@@ -23,14 +23,23 @@ Collect, for every change since the previous release tag (use `/op-release`'s PR
    with no RTM or an open traceability gap
 3. **Change control** — link each `docs/compliance/changes/*-change-record.md`; flag any missing record,
    or any record whose review was a self-review without countersignature (separation-of-duties exception)
-4. **Verification & validation** — aggregate test results, coverage vs. the enforced floors, and the
-   `/op-verify` behavioral outcomes
+4. **Verification & validation** — present in IQ/OQ/PQ-legible terms so a GxP reader can map it,
+   without producing any separate IQ/OQ/PQ documents (CSA posture — these are labels on evidence the
+   pipeline already emits):
+   - *Installation-qualification-equivalent (IQ)* — environment reproducibility: the pinned
+     toolchain (`.nvmrc`), the committed lockfile, and the reproducible CI configuration.
+   - *Operational-qualification-equivalent (OQ)* — aggregate test results, coverage vs. the enforced
+     floors, and the `/op-verify` behavioral outcomes.
+   - *Performance-qualification-equivalent (PQ)* — production-fitness / UAT evidence for the release.
+   Link the system-level control registry (`controls/registry.yaml`) as the validation anchor.
 5. **Security** — the `/op-security` results (CVE/Trivy/gitleaks) and the pre-push gate outcomes
 6. **Regulated-data handling** — the `/op-data-scan` results across the release, for the data classes
    the repo's compliance profile makes active; explicitly state that no critical/high exposure
-   findings remain open. Note the data-residency posture (self-hosted Ollama + private prompt-service
-   — no regulated data or code sent to a third-party model vendor). When `hipaa` is active this is the
-   HIPAA data-handling control's evidence.
+   findings remain open. If the consuming application keeps regulated data in its own trust boundary
+   at runtime (e.g. self-hosted inference, as Opus Populi does), record that architectural posture
+   here as the app's `CTL-HIPAA-002` evidence. Do **not** conflate it with how the SDLC's own
+   development-time AI (Claude Code) handles source code — that is qualified separately under
+   `CTL-AIQ-001`. When `hipaa` is active this section is the HIPAA data-handling control's evidence.
 7. **Risk** — the consolidated risk register across the release and the status of each mitigation
 8. **Exceptions** — every gap, waiver, or `--no-verify` override in this release, with justification.
    An honest exceptions list is mandatory; an evidence pack that hides gaps is a finding, not a pass.
