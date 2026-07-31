@@ -12,7 +12,9 @@
     "pin": "node --experimental-strip-types controls/scripts/pin.ts",
     "docs:generate": "node --experimental-strip-types controls/scripts/generate-docs.ts",
     "docs:check": "node --experimental-strip-types controls/scripts/generate-docs.ts --check",
-    "test": "node --experimental-strip-types --test \"controls/scripts/*.test.ts\""
+    "reconcile": "node --experimental-strip-types controls/scripts/reconcile.ts",
+    "test": "node --experimental-strip-types --test \"controls/scripts/*.test.ts\"",
+    "check": "npm run validate && npm run docs:check && npm run reconcile && npm test"
   },
   "devDependencies": {
     "ajv": "^8.20.0",
