@@ -20,7 +20,7 @@ interface ValidateOptions {
   repoRoot: string;
 }
 
-const PINNABLE = new Set(["ecfr", "eurlex", "document"]);
+const PINNABLE = new Set(["ecfr", "eurlex", "document", "fedreg"]);
 
 export function validateRegistry(registry: unknown, opts: ValidateOptions): Finding[] {
   const findings: Finding[] = [];

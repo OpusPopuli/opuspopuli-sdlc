@@ -10,19 +10,21 @@
 // Offline pure functions are unit-tested; the live fetch + GitHub REST run only in the workflow.
 import { fileURLToPath } from "node:url";
 import { loadRegistry, type Registry, type Citation } from "./registry.ts";
-import { ecfrLatestAmendment, pinDocument } from "./pin.ts";
+import { ecfrLatestAmendment, pinDocument, fedregLatest } from "./pin.ts";
+
+type PolledAdapter = "ecfr" | "document" | "fedreg";
 
 export interface PinnableSource {
   key: string; // stable dedup/identity key
   label: string; // human-readable, used in the issue title (stable per source)
-  adapter: "ecfr" | "document";
+  adapter: PolledAdapter;
   citation: Citation;
 }
 
 export interface DriftFinding {
   key: string;
   label: string;
-  adapter: "ecfr" | "document";
+  adapter: PolledAdapter;
   oldValue: string;
   newValue: string;
   controlIds: string[];
@@ -51,6 +53,7 @@ export function sourceKeyFor(c: Citation): string {
     const sec = c.cfr_section ? `-${c.cfr_section}` : "";
     return `ecfr:title-${c.cfr_title}-part-${c.cfr_part}${sec}`;
   }
+  if (c.adapter === "fedreg") return `fedreg:${c.docket}`;
   return `document:${c.url}`;
 }
 
@@ -60,6 +63,7 @@ export function sourceLabelFor(c: Citation): string {
       ? `${c.cfr_title} CFR ${c.cfr_section}`
       : `${c.cfr_title} CFR part ${c.cfr_part}`;
   }
+  if (c.adapter === "fedreg") return String(c.name ?? `FR docket ${c.docket}`);
   return String(c.name ?? c.url);
 }
 
@@ -67,24 +71,46 @@ export function sourceUrlFor(c: Citation): string {
   if (c.adapter === "ecfr") {
     return `https://www.ecfr.gov/current/title-${c.cfr_title}/part-${c.cfr_part}`;
   }
+  if (c.adapter === "fedreg") {
+    return `https://www.federalregister.gov/documents/search?conditions%5Bdocket_id%5D=${c.docket}`;
+  }
   return String(c.url);
 }
 
-// Unique pinnable sources across the registry (a source may back several controls). Only ecfr and
-// document adapters are polled; clause is copyrighted (never polled); eurlex has no citations yet.
+// A document citation the watcher must NOT fetch because the host blocks datacenter IPs.
+export function isManualDocument(c: Citation): boolean {
+  return c.adapter === "document" && c.auto_poll === false;
+}
+
+// Unique pinnable sources the watcher polls. ecfr + fedreg + document(auto_poll!==false). clause is
+// copyrighted (never polled); eurlex has no citations yet; document with auto_poll:false is manual.
 export function pinnableSources(reg: Registry): PinnableSource[] {
   const byKey = new Map<string, PinnableSource>();
   for (const control of reg.controls) {
     for (const c of control.citations) {
-      if ((c.adapter === "ecfr" || c.adapter === "document") && "pinned" in c) {
+      const polled =
+        (c.adapter === "ecfr" || c.adapter === "fedreg" || (c.adapter === "document" && !isManualDocument(c))) &&
+        "pinned" in c;
+      if (polled) {
         const key = sourceKeyFor(c);
         if (!byKey.has(key)) {
-          byKey.set(key, { key, label: sourceLabelFor(c), adapter: c.adapter, citation: c });
+          byKey.set(key, { key, label: sourceLabelFor(c), adapter: c.adapter as PolledAdapter, citation: c });
         }
       }
     }
   }
   return [...byKey.values()];
+}
+
+// Document sources deliberately excluded from polling (host blocks CI) — surfaced in the summary.
+export function manualSources(reg: Registry): string[] {
+  const labels = new Set<string>();
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (isManualDocument(c)) labels.add(sourceLabelFor(c));
+    }
+  }
+  return [...labels];
 }
 
 export function affectedControls(reg: Registry, key: string): string[] {
@@ -104,6 +130,11 @@ export function documentDrifted(pinnedSha: string, liveSha: string): boolean {
   return pinnedSha !== liveSha;
 }
 
+// A new document on the docket (different newest document number) is a revision to watch.
+export function fedregDrifted(pinnedDocNumber: string, liveDocNumber: string): boolean {
+  return pinnedDocNumber !== liveDocNumber;
+}
+
 // --- issue rendering -------------------------------------------------------
 
 export function driftIssueTitle(f: DriftFinding): string {
@@ -111,7 +142,8 @@ export function driftIssueTitle(f: DriftFinding): string {
 }
 
 export function driftIssueBody(f: DriftFinding): string {
-  const kind = f.adapter === "ecfr" ? "amendment date" : "document checksum";
+  const kind =
+    f.adapter === "ecfr" ? "amendment date" : f.adapter === "fedreg" ? "Federal Register document number" : "document checksum";
   return [
     `The pinned authoritative source for this control set has changed upstream.`,
     ``,
@@ -161,11 +193,13 @@ export function selectNewIssues(
 export interface Fetchers {
   ecfr: (c: Citation) => Promise<string>;
   document: (c: Citation) => Promise<string>;
+  fedreg: (c: Citation) => Promise<string>; // returns the newest document number on the docket
 }
 
 const realFetchers: Fetchers = {
   ecfr: (c) => ecfrLatestAmendment(c.cfr_title as number, String(c.cfr_part), c.cfr_section as string | undefined),
   document: (c) => pinDocument(String(c.url), (c.normalization as "raw" | "text") ?? "raw"),
+  fedreg: async (c) => (await fedregLatest(String(c.docket))).document_number,
 };
 
 export async function collect(
@@ -174,21 +208,24 @@ export async function collect(
 ): Promise<{ findings: DriftFinding[]; errors: WatcherError[] }> {
   const findings: DriftFinding[] = [];
   const errors: WatcherError[] = [];
+  const push = (src: PinnableSource, adapter: PolledAdapter, oldValue: string, newValue: string) =>
+    findings.push({ key: src.key, label: src.label, adapter, oldValue, newValue, controlIds: affectedControls(reg, src.key), url: sourceUrlFor(src.citation) });
+
   for (const src of pinnableSources(reg)) {
     const c = src.citation;
     try {
       if (src.adapter === "ecfr") {
         const pinned = (c.pinned as { amendment_date: string }).amendment_date;
         const live = await fetchers.ecfr(c);
-        if (ecfrDrifted(pinned, live)) {
-          findings.push({ key: src.key, label: src.label, adapter: "ecfr", oldValue: pinned, newValue: live, controlIds: affectedControls(reg, src.key), url: sourceUrlFor(c) });
-        }
+        if (ecfrDrifted(pinned, live)) push(src, "ecfr", pinned, live);
+      } else if (src.adapter === "fedreg") {
+        const pinned = (c.pinned as { latest_document_number: string }).latest_document_number;
+        const live = await fetchers.fedreg(c);
+        if (fedregDrifted(pinned, live)) push(src, "fedreg", pinned, live);
       } else {
         const pinned = (c.pinned as { sha256: string }).sha256;
         const live = await fetchers.document(c);
-        if (documentDrifted(pinned, live)) {
-          findings.push({ key: src.key, label: src.label, adapter: "document", oldValue: pinned, newValue: live, controlIds: affectedControls(reg, src.key), url: sourceUrlFor(c) });
-        }
+        if (documentDrifted(pinned, live)) push(src, "document", pinned, live);
       }
     } catch (e) {
       errors.push({ key: src.key, label: src.label, message: (e as Error).message });
@@ -199,7 +236,7 @@ export async function collect(
 
 // --- retry (so one transient flake doesn't file a false "watcher broken" issue) ----
 
-function retrying(fetchers: Fetchers, attempts = 3): Fetchers {
+export function retrying(fetchers: Fetchers, attempts = 3): Fetchers {
   const wrap = <T>(fn: (c: Citation) => Promise<T>) => async (c: Citation): Promise<T> => {
     let lastErr: unknown;
     for (let i = 0; i < attempts; i++) {
@@ -211,7 +248,7 @@ function retrying(fetchers: Fetchers, attempts = 3): Fetchers {
     }
     throw lastErr;
   };
-  return { ecfr: wrap(fetchers.ecfr), document: wrap(fetchers.document) };
+  return { ecfr: wrap(fetchers.ecfr), document: wrap(fetchers.document), fedreg: wrap(fetchers.fedreg) };
 }
 
 // --- GitHub REST (thin IO; the decisions above are the tested part) --------
@@ -261,6 +298,8 @@ async function main(): Promise<void> {
   console.log(`checked ${pinnableSources(reg).length} pinnable source(s): ${findings.length} drifted, ${errors.length} error(s)`);
   for (const f of findings) console.log(`  DRIFT ${f.label}: ${f.oldValue} → ${f.newValue} (controls: ${f.controlIds.join(", ")})`);
   for (const e of errors) console.log(`  ERROR ${e.label}: ${e.message}`);
+  const manual = manualSources(reg);
+  if (manual.length > 0) console.log(`manual re-verification (host blocks automated access): ${manual.join("; ")}`);
   console.log(COPYRIGHTED_NOTE);
 
   if (dryRun) {

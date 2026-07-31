@@ -63,6 +63,24 @@ export async function pinDocument(url: string, normalization: "raw" | "text"): P
   return sha256Hex(Buffer.from(await res.arrayBuffer()));
 }
 
+// Newest document on a Federal Register docket via the free federalregister.gov API (no key).
+// A new document = a guidance revision to watch — the drift signal for sources whose own host
+// blocks datacenter IPs. Endpoint shape verified at runtime; any surprise throws loudly.
+export async function fedregLatest(
+  docket: string
+): Promise<{ document_number: string; publication_date: string }> {
+  const url =
+    `https://www.federalregister.gov/api/v1/documents.json?conditions%5Bdocket_id%5D=${encodeURIComponent(docket)}` +
+    `&order=newest&per_page=1&fields%5B%5D=document_number&fields%5B%5D=publication_date`;
+  const res = await fetchOk(url);
+  const body = (await res.json()) as { results?: Array<{ document_number?: string; publication_date?: string }> };
+  const top = body.results?.[0];
+  if (!top?.document_number || !top?.publication_date) {
+    throw new Error(`Federal Register API returned no documents for docket ${docket} — API shape or docket may have changed`);
+  }
+  return { document_number: top.document_number, publication_date: top.publication_date };
+}
+
 async function pinCitation(citation: any): Promise<void> {
   const adapter = citation.get("adapter");
   if (adapter === "ecfr") {
@@ -75,6 +93,13 @@ async function pinCitation(citation: any): Promise<void> {
   } else if (adapter === "document") {
     const sha = await pinDocument(citation.get("url"), citation.get("normalization") ?? "raw");
     citation.set("pinned", { sha256: sha, retrieved: today() });
+  } else if (adapter === "fedreg") {
+    const latest = await fedregLatest(citation.get("docket"));
+    citation.set("pinned", {
+      latest_document_number: latest.document_number,
+      latest_publication_date: latest.publication_date,
+      checked: today(),
+    });
   } else if (adapter === "eurlex") {
     throw new Error("eurlex adapter pinning is implemented by the GDPR pack (#7)");
   }
@@ -104,7 +129,7 @@ async function main() {
     let allPinned = true;
     for (const citation of (control.get("citations") as any).items) {
       const adapter = citation.get("adapter");
-      const pinnable = adapter === "ecfr" || adapter === "document" || adapter === "eurlex";
+      const pinnable = adapter === "ecfr" || adapter === "document" || adapter === "eurlex" || adapter === "fedreg";
       if (!pinnable || citation.has("pinned")) continue;
       try {
         await pinCitation(citation);

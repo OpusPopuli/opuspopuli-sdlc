@@ -233,12 +233,24 @@ controls:
           System Software
         url: https://www.fda.gov/media/188844/download
         normalization: raw
-        note: Final guidance PDF (finalized 2025-09-24; stable /media/ download URL).
-          The human-readable landing page is
-          fda.gov/regulatory-information/search-fda-guidance-documents/computer-software-assurance-production-and-quality-system-software
+        auto_poll: false
+        note: Final guidance PDF (finalized 2025-09-24). fda.gov's CDN 404s datacenter
+          IPs, so the upstream drift watch cannot re-fetch this from CI — the
+          sha256 records the last manually-verified state, and the fedreg
+          citation below is the automated signal for revisions.
         pinned:
           sha256: 11e2e21f5eb226b56a578da44e732965a2318e9b983422c6a58e51bc7b2e223a
           retrieved: 2026-07-30
+      - adapter: fedreg
+        name: FDA CSA guidance — Federal Register docket
+        docket: FDA-2022-D-0795
+        note: Free federalregister.gov API (no key, CI-reachable). A new document on
+          this docket signals a revision to the CSA guidance — the automated
+          drift signal that the IP-blocked PDF above cannot provide.
+        pinned:
+          latest_document_number: 2025-18468
+          latest_publication_date: 2025-09-24
+          checked: 2026-07-31
     implemented_by:
       - type: skill
         ref: op-validate
