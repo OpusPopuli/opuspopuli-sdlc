@@ -39,8 +39,10 @@ Scan for these exposure sinks specifically:
    bypasses it.)
 2. **Fixtures & seed data** — real (not synthetic) personal data committed under `__tests__`, fixtures,
    or `supabase/seed*`. Test data must be synthetic/faker-generated.
-3. **Prompts** — PHI/PII interpolated into any text sent to a model. Note: self-hosted Ollama + the
-   private prompt-service keep this in-house, but still flag it — minimum-necessary applies internally too.
+3. **Prompts** — PHI/PII interpolated into any text the consuming app sends to a model at runtime.
+   If the app uses self-hosted inference (as Opus Populi does) this stays in its trust boundary, but
+   still flag it — minimum-necessary applies internally too. (This is about the *app's* runtime AI,
+   not the SDLC's own tooling.)
 4. **GraphQL over-exposure** — resolvers or fields that return more personal data than the operation needs.
 5. **Hardcoded examples** — realistic-looking personal records pasted into code comments or docs.
 

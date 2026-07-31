@@ -29,8 +29,8 @@ evidence an auditor wants falls out of the pipeline instead of being reconstruct
 
 Enforcement is not advisory: a repo-side `pre-push` git hook (see `hooks/pre-push-gate.md`) runs the
 coverage floor, duplication, lint, dependency audit, filesystem/secret scans, and an **AI code-review +
-security-review + PHI gate** on every push. `--no-verify` is the only override, and it is recorded as an
-exception in the release validation pack.
+security-review + regulated-data gate** (scoped to the repo's compliance profile) on every push.
+`--no-verify` is the only override, and it is recorded as an exception in the release validation pack.
 
 ## Control mapping
 
@@ -48,13 +48,13 @@ exception in the release validation pack.
 | Control ID | Framework | Control | Implemented by |
 |------------|-----------|---------|----------------|
 | `CTL-HIPAA-001` | HIPAA | PHI never appears in logs, prompts, or fixtures | `op-data-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
-| `CTL-HIPAA-002` | HIPAA | Data residency and minimum necessary — no PHI or code to third-party model vendors | self-hosted-models (arch), private-prompt-service (arch), `op-validate` |
+| `CTL-HIPAA-002` | HIPAA | Runtime data residency and minimum necessary for regulated data | consuming-app-runtime-residency (arch), `op-review`, `op-validate` |
 | `CTL-HIPAA-003` | HIPAA | Access to PHI is restricted and reviewed at the API surface | `op-review` |
 | `CTL-SOC2-001` | SOC 2 | Change management — plan, independent review, enforced gate, recorded change | `op-issue-plan`, `op-review`, `pre-push-gate` (hook), `op-change-record` |
 | `CTL-SOD-001` | SOC 2 | Separation of duties — self-review is flagged and requires countersignature | `op-review`, `op-change-record` |
 | `CTL-P11-001` | 21 CFR Part 11 | Requirement-to-code-to-test-to-release traceability | `op-trace` |
 | `CTL-P11-002` | 21 CFR Part 11 | Electronic signatures — approvals captured as signed who/when/meaning records | `op-change-record` |
-| `CTL-AIQ-001` | Part 11 / GxP (CSA) | AI tool qualification — the AI tooling itself is qualified for its intended use | self-hosted-models (arch), private-prompt-service (arch), human-gated-skills (arch), `op-validate` |
+| `CTL-AIQ-001` | Part 11 / GxP (CSA) | AI tool qualification — the AI assisting this SDLC is qualified for its intended use | claude-code-tooling (arch), human-gated-skills (arch), `op-validate` |
 | `CTL-CSA-001` | Part 11 / GxP (CSA) | Validation evidence — risk-based release qualification pack (CSA posture) | `op-validate` |
 | `CTL-ISO-001` | ISO 62304 / 14971 | Risk management per change — risk register in every plan of record | `op-issue-plan` |
 | `CTL-CCPA-001` | US state privacy (CCPA/CPRA) | Personal and sensitive personal information — definitions and handling | `op-data-scan` |
@@ -64,13 +64,70 @@ exception in the release validation pack.
 
 <!-- END generated:control-mapping -->
 
-## The data-residency advantage
+## CSA, not legacy CSV
 
-Most "AI SDLC" pipelines send every diff, prompt, and sometimes production data to a SaaS model provider —
-a standing BAA and data-residency problem under HIPAA and Part 11. This lifecycle is built to run AI on
-**self-hosted models** with prompt templates served from a **private, authenticated prompt service**.
-Regulated data and source code stay inside the trust boundary. That is the control most competing setups
-cannot claim.
+The regulatory direction of travel is *away* from document-heavy legacy **CSV** (Computer System
+Validation — script every requirement, run IQ/OQ/PQ regardless of risk, and treat documentation as
+the deliverable) and *toward* **CSA** (Computer Software Assurance): risk-proportionate assurance,
+critical thinking over ceremony, and evidence as a byproduct of the work rather than its purpose.
+FDA's *Computer Software Assurance for Production and Quality System Software* guidance — finalized
+2025-09-24, pinned here as `CTL-CSA-001` and watched for revision by the upstream drift job — is the
+current articulation of that shift.
+
+This plugin is CSA-native by construction. It adds **no** validation master plan, **no** scripted
+IQ/OQ/PQ document tree, **no** ceremony proportional to nothing. The risk register in every
+plan-of-record scales scrutiny to impact; the evidence (plans, traceability matrices, signed change
+records, release packs) falls out of normal engineering. CSA does not mean *less* validation — it
+means validation *scaled to risk*: high-impact changes stay rigorous, low-impact ones stay light.
+`op-validate` presents its evidence in IQ/OQ/PQ-legible terms so a GxP reader can map it, without
+requiring the legacy documents those terms came from.
+
+## Two-tier source policy and licensing
+
+Every control is pinned to its authoritative source, but sources fall into two legal tiers:
+
+- **Public-domain / freely-reusable** (US federal regulations via eCFR; California statute and
+  regulation; EU law via EUR-Lex) — pinned by point-in-time version or checksum, and freely
+  quotable. These the registry can reproduce.
+- **Copyrighted** (GAMP 5, the SOC 2 Trust Services Criteria, ISO/IEC standards) — cited by clause
+  identifier **only**. Their text is never vendored into this MIT-licensed repo; the `clause`
+  citation schema structurally forbids a text body. This boundary is a licensing requirement, not a
+  stylistic choice — an MIT repo cannot redistribute paywalled standards text.
+
+## Drift is enforced in both directions
+
+The control mapping is not a document that rots — CI reconciles it continuously:
+
+- **Internal drift** (`.github/workflows/internal-drift.yml`, issue #3) runs on every PR: the
+  registry validates against its schema, every control maps to a real skill/hook/gate, every control
+  ID cited in a skill exists, and the generated table above matches the registry. The repo cannot
+  disagree with itself and stay green.
+- **Upstream drift** (`.github/workflows/upstream-drift.yml`, issue #4) runs weekly: it compares the
+  live authoritative sources (eCFR amendment dates, Federal Register dockets, document checksums)
+  against the committed pins and files a triage-ready issue per changed source — routed into
+  `op-issue-triage`, so a regulation change becomes an ordinary intake item in this SDLC's own
+  backlog. This is the automated, CSA-native replacement for a manual periodic-review ceremony.
+
+## Two AI systems, kept distinct
+
+An honest compliance model must not conflate the two AI systems in play:
+
+- **The SDLC's development-time AI is Claude Code** (Anthropic's Claude) — a **hosted** model.
+  Source code and diffs are sent to Anthropic's API. Its qualification (`CTL-AIQ-001`) rests on a
+  recorded model/plugin version, human approval gates at every phase, versioned skills whose actions
+  are recorded, and an honest data-handling posture — an organization qualifying the tool should
+  assess Anthropic's data-handling terms (no training on API inputs, zero-data-retention options).
+  This plugin does **not** claim source code stays inside a local trust boundary.
+- **The consuming application's runtime data residency is the application's own concern**
+  (`CTL-HIPAA-002`). If it processes regulated data at runtime, keeping that data in-boundary is its
+  architectural responsibility. Opus Populi, for instance, runs self-hosted inference and a private
+  prompt-service so PHI is not sent to a third-party model vendor *at runtime* — its implementation,
+  not a property of this plugin. The SDLC reviews it (`op-review`) and records the posture in the
+  release pack (`op-validate`).
+
+Stating this plainly is itself part of the honesty guardrail: claiming the SDLC's own AI is
+self-hosted would be an overclaim, and an evidence pipeline that oversells itself is a finding, not a
+feature.
 
 ## Evidence layout (in the consuming repo)
 

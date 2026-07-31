@@ -28,6 +28,10 @@ machine-readable **control registry** ([`controls/`](controls/README.md)) that p
 control to its authoritative source (eCFR, guidance documents, framework clause IDs) with
 provenance — the foundation for CI-enforced drift detection in both directions (issues #3/#4).
 
+For how it all fits together technically — the registry model, source adapters, the two drift gates,
+the profile model, the toolchain, and how to adopt it in your own repo — see
+[`docs/architecture.md`](docs/architecture.md).
+
 > The root `package.json` exists only for the registry's TypeScript tooling — this repo is a
 > Claude Code plugin, not an npm package.
 
@@ -57,9 +61,12 @@ records, validation packs), the auditor's binder assembles itself.
 controls. They do not by themselves make an organization compliant; that still requires policies, training,
 risk assessments, BAAs, and an actual audit.
 
-**Data residency:** the lifecycle is built to run AI on self-hosted models with a private prompt service, so
-regulated data and source code stay inside the trust boundary — no diffs or PHI shipped to a third-party
-model vendor.
+**Two AI systems, kept distinct:** this plugin's own development-time AI is **Claude Code** (Anthropic's
+Claude) — a hosted model that receives source code and diffs; qualify it honestly (see `CTL-AIQ-001` and
+[`docs/architecture.md`](docs/architecture.md)), don't assume it keeps code in a local boundary. Separately, a
+*consuming application* that processes regulated data at runtime is responsible for its own data residency —
+Opus Populi, for example, runs self-hosted inference so PHI stays in-boundary at runtime (`CTL-HIPAA-002`). The
+SDLC reviews and evidences that; it does not provide it.
 
 ## License
 

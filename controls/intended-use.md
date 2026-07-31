@@ -1,7 +1,7 @@
 # Intended use & GxP impact statement
 
-*Preamble to [`controls/registry.yaml`](registry.yaml). Expanded by issue #5; this is the
-plan-of-record minimum required by issue #1.*
+*Preamble to [`controls/registry.yaml`](registry.yaml). The registry's intended-use / GxP impact
+statement. For how the plugin works technically, see [`docs/architecture.md`](../docs/architecture.md).*
 
 ## What this system is
 
@@ -33,8 +33,25 @@ agreements, and an actual audit. The artifacts produced here are **audit-ready s
 evidence** — describe them as "audit-ready", never "compliant". An evidence pack that hides gaps
 is a finding, not a pass.
 
-## AI tooling qualification
+## Two AI systems, kept distinct
 
-The AI assisting this lifecycle is itself under control `CTL-AIQ-001`: self-hosted models, a
-private authenticated prompt service, human gates on every phase, and a data-residency boundary
-that keeps source code and regulated data inside the trust boundary.
+Compliance readers must not conflate the two AI systems in play:
+
+1. **The SDLC's development-time AI is Claude Code** (Anthropic's Claude). It is the AI that plans,
+   builds, and reviews software when a developer runs these skills. It is a **hosted** model —
+   source code and diffs are sent to Anthropic's API. Its qualification (`CTL-AIQ-001`) rests on a
+   recorded model/plugin version, human approval gates at every phase (no autonomous production
+   changes), versioned skills whose actions are recorded, and an **honest data-handling posture**.
+   An organization qualifying this tool for regulated use should assess Anthropic's data-handling
+   terms — no training on API inputs, zero-data-retention options — and decide accordingly. This
+   plugin does **not** claim source code stays inside a local trust boundary.
+
+2. **The consuming application's runtime AI is the application's own choice** (`CTL-HIPAA-002`). If
+   the app processes regulated data at runtime, keeping that data in-boundary is the app's
+   architectural responsibility. Opus Populi, for example, runs self-hosted inference and a private
+   prompt-service so PHI is not sent to a third-party model vendor at runtime — but that is Opus
+   Populi's implementation, not a property of this plugin. The SDLC's role is to review it
+   (`op-review`) and record the posture in the release evidence (`op-validate`).
+
+Distinguishing these is itself part of honest tool qualification: overstating that the SDLC's own
+AI is self-hosted would be exactly the kind of overclaim the honesty guardrail above forbids.

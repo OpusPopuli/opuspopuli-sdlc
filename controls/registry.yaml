@@ -66,7 +66,9 @@ controls:
     status: active
 
   - id: CTL-HIPAA-002
-    title: Data residency and minimum necessary — no PHI or code to third-party model vendors
+    title: Runtime data residency and minimum necessary for regulated data
+    description: >-
+      A control the CONSUMING application satisfies in its own architecture: regulated data (e.g. PHI) processed at runtime stays within the app's trust boundary, and the minimum necessary is used. Opus Populi implements this with self-hosted inference and a private prompt-service so PHI is not sent to a third-party model vendor at runtime — but that is Opus Populi's implementation choice, not something the SDLC plugin provides. The SDLC's role is to review it (op-review) and record the posture in the release evidence (op-validate). Note: this is distinct from how the SDLC's own development-time AI (Claude Code) handles source code — see CTL-AIQ-001.
     family: hipaa
     jurisdiction: us
     applicability: [ us-phi ]
@@ -81,12 +83,14 @@ controls:
           checked: 2026-07-30
     implemented_by:
       - type: architecture
-        ref: self-hosted-models
-      - type: architecture
-        ref: private-prompt-service
+        ref: consuming-app-runtime-residency
+        note: the consuming app's runtime AI/data architecture (Opus Populi — self-hosted inference)
+      - type: skill
+        ref: op-review
+        note: verifies changes don't send regulated data to a third-party runtime service
       - type: skill
         ref: op-validate
-        note: residency posture stated in every release validation pack
+        note: records the consuming app's residency posture in the release validation pack
     evidence:
       - docs/compliance/releases/*-validation.md
     status: active
@@ -264,9 +268,9 @@ controls:
     status: active
 
   - id: CTL-AIQ-001
-    title: AI tool qualification — the AI tooling itself is qualified for its intended use
+    title: AI tool qualification — the AI assisting this SDLC is qualified for its intended use
     description: >-
-      Records model version, prompt-service configuration, human-gating posture, and the data-residency boundary (self-hosted models; no source code or regulated data leaves the trust boundary). Answers the auditor question "how is the AI assisting this SDLC itself controlled?".
+      Answers the auditor question "how is the AI assisting this SDLC itself controlled?". The SDLC is assisted by Claude Code (Anthropic's Claude, e.g. Opus 4.x) — a hosted model, NOT self-hosted. Qualification rests on: a recorded model/plugin version, human approval gates at every lifecycle phase (no autonomous production changes), versioned skills whose actions are recorded, and an honest data-handling posture. Data handling: source code and diffs are sent to Anthropic's API; an organization qualifying this tool for regulated use should assess Anthropic's data-handling terms (no training on API inputs, zero-data-retention options) and decide accordingly — this control does NOT claim code stays in a local trust boundary. (The consuming application's runtime data residency is a separate concern — see CTL-HIPAA-002.)
     family: gxp-csa
     jurisdiction: global
     applicability: [ all ]
@@ -278,14 +282,13 @@ controls:
           GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering against a licensed copy before citing in an audit response; text is never vendored here.
     implemented_by:
       - type: architecture
-        ref: self-hosted-models
-      - type: architecture
-        ref: private-prompt-service
+        ref: claude-code-tooling
+        note: Anthropic Claude via Claude Code; hosted, versioned, recorded — not self-hosted
       - type: architecture
         ref: human-gated-skills
       - type: skill
         ref: op-validate
-        note: qualification record referenced in the release validation pack
+        note: qualification record (model/plugin version, gating, data-handling posture) in the release pack
     evidence:
       - docs/compliance/releases/*-validation.md
     status: active
