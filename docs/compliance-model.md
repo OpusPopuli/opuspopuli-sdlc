@@ -57,6 +57,10 @@ exception in the release validation pack.
 | `CTL-AIQ-001` | Part 11 / GxP (CSA) | AI tool qualification — the AI tooling itself is qualified for its intended use | self-hosted-models (arch), private-prompt-service (arch), human-gated-skills (arch), `op-validate` |
 | `CTL-CSA-001` | Part 11 / GxP (CSA) | Validation evidence — risk-based release qualification pack (CSA posture) | `op-validate` |
 | `CTL-ISO-001` | ISO 62304 / 14971 | Risk management per change — risk register in every plan of record | `op-issue-plan` |
+| `CTL-CCPA-001` | US state privacy (CCPA/CPRA) | Personal and sensitive personal information — definitions and handling | `op-data-scan` |
+| `CTL-CCPA-002` | US state privacy (CCPA/CPRA) | Consumer rights — know, delete, correct, opt-out of sale/sharing | `op-issue-plan`, `op-review` |
+| `CTL-CCPA-003` | US state privacy (CCPA/CPRA) | Reasonable security and breach liability | `op-review`, `op-hotfix` |
+| `CTL-CCPA-004` | US state privacy (CCPA/CPRA) | Service-provider and contractor contract requirements | subprocessor-agreements (arch) |
 
 <!-- END generated:control-mapping -->
 

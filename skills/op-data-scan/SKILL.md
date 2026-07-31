@@ -46,11 +46,34 @@ Scan for these exposure sinks specifically:
 
 ## CCPA / CPRA personal information (data class `ca-personal-information`)
 
-*Detection categories are contributed by the US state privacy pack (#8). CCPA "personal
-information" is broader than classic PII — it includes household-level data, unique identifiers,
-commercial/browsing history, geolocation, and inferences drawn to build a profile. Until #8 lands,
-apply the PHI/PII section above as the nearest superset and note that CCPA-specific categories
-(household data, inferences) are not yet itemized.*
+CCPA "personal information" (Cal. Civ. Code § 1798.140(v)) is **broader than classic PII** — it is
+information that identifies or could reasonably be linked, directly or indirectly, with a particular
+consumer *or household*. Everything in the PHI/PII section above still applies; additionally scan for
+these CCPA-specific categories:
+
+- **Household data** — data tied to a household rather than a named individual (a household is a
+  protected subject under CCPA, unlike most PII regimes).
+- **Unique & online identifiers** — cookie IDs, device IDs, advertising IDs, IP addresses,
+  account/customer IDs, and other pseudonymous identifiers that persist across sessions.
+- **Commercial information** — records of products/services purchased, obtained, or considered;
+  purchasing or consuming histories.
+- **Internet/network activity** — browsing history, search history, and interaction data with a
+  site, app, or ad.
+- **Geolocation data** — location derived from IP, GPS, or device signals.
+- **Inferences & profiles** — inferences drawn from any of the above to create a profile reflecting
+  preferences, characteristics, behavior, or aptitudes. Flag derived/scored fields, not just raw
+  captured data — this is the category teams most often miss.
+
+**Sensitive personal information** (§ 1798.140(ae)) is a heightened subset — SSN/driver's
+license/passport numbers, financial account + access credentials, precise geolocation, race or
+ethnic origin, religious beliefs, union membership, contents of mail/email/texts, genetic data,
+biometric identifiers, and health/sex-life/sexual-orientation data. Treat exposure of these as
+critical/high.
+
+The exposure sinks are the same as the PHI/PII section (logs & errors, fixtures & seed data,
+prompts, GraphQL over-exposure, hardcoded examples). Note that most name/address/email/identifier
+findings apply under both `phi-pii` and `ca-personal-information`; the CCPA-distinct additions are
+household data, pseudonymous identifiers, browsing/commercial history, and inferences.
 
 ## GDPR personal data (data class `eu-personal-data`)
 
