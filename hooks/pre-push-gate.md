@@ -31,3 +31,16 @@ The AI security-review stage must include the HIPAA lens:
 
 This makes the HIPAA data-handling control **enforced at push time**, not merely available as the
 `op-phi-scan` skill.
+
+## Maintaining this plugin repo
+
+The stages above are for **consuming** repositories. Contributors to *this* repo
+(`opuspopuli-sdlc`) — the one that holds the control registry — should additionally run:
+
+```
+npm run check   # validate registry + docs match generator + registry↔skills/hooks reconcile + tests
+```
+
+before pushing, to catch registry/doc drift locally. The same command is the entire job of the
+`internal-drift` GitHub Actions workflow (`.github/workflows/internal-drift.yml`), which gates every
+PR. See [`controls/README.md`](../controls/README.md) for the individual checks.

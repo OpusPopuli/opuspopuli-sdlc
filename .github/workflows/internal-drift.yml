@@ -1,0 +1,32 @@
+name: internal-drift
+
+# Reconciles the control registry against the skills, hooks, and generated docs that reference it.
+# Fails a PR when the repo's compliance claims and its contents disagree (issue #3). Offline
+# checks only — no secrets beyond GITHUB_TOKEN, no network egress from the checks themselves.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel superseded runs on the same ref so only the latest push is gated.
+concurrency:
+  group: internal-drift-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      # Bundled gate: registry schema/semantics, docs match generator, registry<->skills/hooks
+      # reconciliation, and the unit tests. Each step exits non-zero on drift and names the pair.
+      - run: npm run check
