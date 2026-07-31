@@ -10,7 +10,7 @@ export const CONTROLS_DIR = join(SCRIPT_DIR, "..");
 export const SCHEMA_PATH = join(CONTROLS_DIR, "schema", "registry.schema.json");
 export const REGISTRY_PATH = join(CONTROLS_DIR, "registry.yaml");
 
-export type Adapter = "ecfr" | "eurlex" | "document" | "clause";
+export type Adapter = "ecfr" | "eurlex" | "document" | "fedreg" | "clause";
 
 export interface Citation {
   adapter: Adapter;

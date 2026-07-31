@@ -143,8 +143,31 @@
         { "$ref": "#/definitions/citationEcfr" },
         { "$ref": "#/definitions/citationEurlex" },
         { "$ref": "#/definitions/citationDocument" },
+        { "$ref": "#/definitions/citationFedreg" },
         { "$ref": "#/definitions/citationClause" }
       ]
+    },
+    "citationFedreg": {
+      "type": "object",
+      "description": "A Federal Register docket, polled via the free federalregister.gov API (no key, CI-reachable). Used as the drift signal for guidance documents whose own host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). A new document on the docket = a revision to watch.",
+      "additionalProperties": false,
+      "required": ["adapter", "docket"],
+      "properties": {
+        "adapter": { "const": "fedreg" },
+        "docket": { "type": "string", "pattern": "^[A-Z0-9-]+$", "description": "Federal Register docket id, e.g. FDA-2022-D-0795." },
+        "name": { "type": "string" },
+        "note": { "type": "string" },
+        "pinned": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["latest_document_number", "latest_publication_date", "checked"],
+          "properties": {
+            "latest_document_number": { "type": "string", "description": "Newest document number on the docket at pin time, e.g. 2025-18468." },
+            "latest_publication_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
+            "checked": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+          }
+        }
+      }
     },
     "citationEcfr": {
       "type": "object",
@@ -213,6 +236,11 @@
           "enum": ["raw", "text"],
           "default": "raw",
           "description": "raw = checksum the bytes (PDFs). text = strip markup and collapse whitespace before checksumming (HTML statute pages), so template changes don't fire false drift alarms."
+        },
+        "auto_poll": {
+          "type": "boolean",
+          "default": true,
+          "description": "false = the upstream drift watch (#4) skips re-fetching this source because its host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). The sha256 pin still records the last manually-verified state; pair with a fedreg citation for the automated signal. Listed as 'manual re-verification' in the watcher summary."
         },
         "note": { "type": "string" },
         "pinned": {
