@@ -103,6 +103,88 @@ An **assessment finding record** per control:
 It mirrors `op-change-record`'s signed structure. Candidate skill/action name: **`op-assess`**, whose
 output feeds `op-validate`. The human signs the record; the AI never does.
 
+## Implementation path: GitHub-native (Agent HQ, custom agents, signed attestations)
+
+> Captured from a separate design conversation (2026-07-31). The GitHub platform specifics below are
+> as reported there and **should be verified against current GitHub docs before building** — the
+> platform is moving fast, and the source flagged its own citations as worth double-checking.
+
+GitHub's agent tooling makes this buildable without inventing infrastructure:
+
+- **Agent HQ / mission control** runs coding agents from multiple vendors (Anthropic, OpenAI, Google,
+  Cognition, xAI) in sandboxed Actions runners behind a firewall, committing only to designated
+  branches under distinct identity controls.
+- **Custom agents** are defined as `.github/agents/<name>.agent.md` files (org/enterprise versions in
+  a `.github-private` repo) — a way to codify house standards once instead of re-prompting.
+
+### Split the two words hard: assessment ≠ attestation
+
+The failure mode is collapsing them. **Assessment is judgment; attestation is evidence.** An LLM
+writing "I attest this PR followed the AI-SDLC" is a *claim*, not an attestation — under a Part 11 /
+model-validation review it gets shredded in the first hour. So the build is three layers, not one
+agent:
+
+- **Layer 1 — deterministic checker (not an agent).** A TypeScript CLI shipped alongside the `op-*`
+  skills that verifies only *checkable facts*: linked issue exists; plan artifact present before the
+  first implementation commit; regression test added on a bugfix path; migration has a rollback;
+  `op-security` ran and its output is attached; coverage delta non-negative. No inference, no model.
+  **This is what the branch ruleset actually gates on.** (Realizes this note's "shrink the trust
+  surface" principle — the mechanical bulk is code, not AI.)
+- **Layer 2 — assessor agent** (`.github/agents/op-sdlc-assessor.agent.md`). Read-only tools, no
+  write access, cannot open PRs. Reads the issue, plan, diff, and test changes and emits **structured
+  JSON — per-stage verdict plus cited evidence** — for what a checker can't evaluate: does the
+  implementation actually match the plan; is the test meaningful or a coverage-shaped placebo. Its
+  output is an *input to the record, never the verdict itself.* (This is the `op-assess` finding
+  above, realized as a GitHub custom agent.)
+- **Layer 3 — cryptographic attestation.** `actions/attest` supports custom predicates (not just
+  SLSA provenance), so you sign the **evidence bundle** — checker results + assessor JSON + commit
+  SHA — as your own predicate type: bound subject-to-predicate in in-toto format, signed with a
+  short-lived Sigstore certificate, verified with `gh attestation verify --predicate-type …`. A
+  tamper-evident lifecycle record, not a checkbox.
+
+Two senses of "attestation" must both hold: the **human accountability act** (a named QA reviewer
+signs off — the regulatory signature, captured in the bundle) and the **cryptographic attestation**
+(the bundle is sealed and tamper-evident). Complementary, not interchangeable.
+
+### GitHub makes the independence claim *verifiable*
+
+"Author-AI ≠ assessor-AI" stops being a policy statement and becomes a **verifiable** one: agents
+commit only to designated branches under distinct identity controls, so "the agent that wrote the
+code is not the agent that assessed it" is something an auditor can check, not just something you
+assert. That maps directly onto a separation-of-duties control auditors already understand.
+
+### Configurable agent backends — bootstrap vs gold standard
+
+Because Agent HQ is multi-vendor, the AI backend for each role should be **configurable** (provider +
+model per role), mirroring the plugin's provider-pattern elsewhere:
+
+- **Gold standard: author-AI ≠ assessor-AI** — different models, ideally different vendors, for
+  genuine independence.
+- **Bootstrap: the same AI in both roles, heavily caveated** — procurement/BAA constraints often
+  force a single approved vendor. Functional, but the independence property is weakened, so lean
+  harder on the compensating controls (strict adversarial posture, human attestation, ground-truth
+  eval) and *say so*: running one model in both roles and calling it "independent" is an overclaim.
+
+Configurability meets orgs where they are — start on one approved vendor today, graduate to a
+two-vendor split when qualification allows.
+
+### Caveats before designing around it
+
+- **`.agent.md` is a prompt, not a policy engine.** Enforcement lives in **branch rulesets and
+  required status checks** — the agent produces input to the gate; the ruleset *is* the gate.
+- **Private repos need GitHub Enterprise Cloud.** Artifact Attestations are free on public repos;
+  private-repo use requires GHEC. Fine for a public/AGPL repo like Opus Populi; a real cost line for
+  client work.
+- **Beware cryptographically signed noise.** An attestation is worth exactly as much as the checks
+  that could *plausibly fail*. Start with three or four gates that would genuinely block a real PR,
+  not eleven that always pass.
+
+### Positioning
+
+For Opus Populi this downstream half is a nice-to-have (its real surface is privacy). For
+regulated-industry client work it is the *product*: an auditor doesn't buy a process document, they
+buy **artifacts** — and the signed evidence bundle is the artifact.
+
 ## The honest ceiling (guardrail, one level deeper)
 
 The truthful framing is **assessment-*assisted*, not auto-attested**: it does not replace the QA
