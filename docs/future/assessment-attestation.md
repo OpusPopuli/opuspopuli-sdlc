@@ -174,16 +174,17 @@ two-vendor split when qualification allows.
   required status checks** — the agent produces input to the gate; the ruleset *is* the gate.
 - **Private repos need GitHub Enterprise Cloud.** Artifact Attestations are free on public repos;
   private-repo use requires GHEC. Fine for a public/AGPL repo like Opus Populi; a real cost line for
-  client work.
+  any private-repo adopter.
 - **Beware cryptographically signed noise.** An attestation is worth exactly as much as the checks
   that could *plausibly fail*. Start with three or four gates that would genuinely block a real PR,
   not eleven that always pass.
 
-### Positioning
+### Why it matters
 
-For Opus Populi this downstream half is a nice-to-have (its real surface is privacy). For
-regulated-industry client work it is the *product*: an auditor doesn't buy a process document, they
-buy **artifacts** — and the signed evidence bundle is the artifact.
+For Opus Populi this downstream half is a nice-to-have (its real surface is privacy). Anywhere a
+system faces a regulated audit, it's the crux: an auditor doesn't accept a process document, they
+want **artifacts** — and the signed evidence bundle is the artifact. That's what makes the
+downstream half the higher-value one.
 
 ## The honest ceiling (guardrail, one level deeper)
 
