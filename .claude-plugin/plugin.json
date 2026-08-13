@@ -1,7 +1,7 @@
 {
   "name": "opuspopuli-sdlc",
   "description": "Opus Populi's audit-ready, AI-assisted SDLC as reusable Claude Code skills: plan-first development, multi-lens review, behavioral verification, and HIPAA/SOC 2/21 CFR Part 11 evidence generation (traceability, change control, release validation).",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "author": {
     "name": "Opus Populi"
   },

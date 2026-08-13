@@ -1,0 +1,90 @@
+name: plugin-version-guard
+
+# Fails a PR that changes distributed plugin content without bumping the plugin
+# version.
+#
+# Why this exists: Claude Code caches an installed plugin under its version and
+# decides whether an update is available by comparing that version string. Change
+# a skill without bumping `version`, and every consumer keeps running the cached
+# copy indefinitely — no error, no warning, no way to tell.
+#
+# This is not hypothetical. On 2026-08-13 #39 made op-review and op-release
+# branch-model agnostic, because `develop` had just been deleted from both
+# opuspopuli and prompt-service. It merged cleanly and changed nothing: the local
+# cache stayed pinned to a commit from 2026-07-30 under version 0.1.0, so
+# op-review went on diffing against a branch that no longer existed.
+#
+# Same failure shape the org hit with untagged container releases — the artifact
+# moves, the version does not, and consumers cannot tell. The fix in both cases
+# is to make the version the thing that must move.
+#
+# Offline: no network, no secrets beyond the default token.
+
+on:
+  pull_request:
+
+concurrency:
+  group: plugin-version-guard-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  version-bump:
+    name: Plugin version bumped when content changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # Full history so the merge base with the target branch is reachable.
+          fetch-depth: 0
+
+      - name: Require a version bump for distributed content changes
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          MANIFEST=.claude-plugin/plugin.json
+
+          # Everything shipped to consumers when the plugin installs. docs/ and
+          # controls/ are deliberately excluded: they are read in the repo, not
+          # resolved from the installed cache, so they cannot go stale for a
+          # consumer the way a skill can.
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
+            skills hooks .claude-plugin || true)
+
+          if [ -z "$CHANGED" ]; then
+            echo "No distributed plugin content changed — version bump not required."
+            exit 0
+          fi
+
+          echo "Distributed content changed:"
+          printf '  %s\n' $CHANGED
+
+          # `git show` rather than a checkout, so the working tree stays put.
+          BASE_VERSION=$(git show "$BASE_SHA:$MANIFEST" 2>/dev/null \
+            | sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -1)
+          HEAD_VERSION=$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' \
+            "$MANIFEST" | head -1)
+
+          echo ""
+          echo "  base version: ${BASE_VERSION:-<none>}"
+          echo "  head version: ${HEAD_VERSION:-<none>}"
+
+          if [ -z "$HEAD_VERSION" ]; then
+            echo "::error file=$MANIFEST::Could not read a version from $MANIFEST."
+            exit 1
+          fi
+
+          if [ "$BASE_VERSION" = "$HEAD_VERSION" ]; then
+            echo "::error file=$MANIFEST::Plugin content changed but version is still \
+          $HEAD_VERSION. Consumers key their cache off this string, so without a bump they \
+          keep running the old copy and nothing tells them. Bump the version in $MANIFEST."
+            exit 1
+          fi
+
+          echo ""
+          echo "Version moved ${BASE_VERSION:-<none>} -> $HEAD_VERSION."
