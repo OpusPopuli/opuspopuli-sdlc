@@ -1,6 +1,6 @@
 ---
 name: op-release
-description: Prepare a release — changelog, semver bump, release notes, and the validation evidence pack. Use to cut a develop→main release.
+description: Prepare a release — changelog, semver bump, release notes, and the validation evidence pack. Use before tagging a release.
 argument-hint: <release version, e.g. v1.4.0>
 ---
 
@@ -16,3 +16,14 @@ Prepare release $ARGUMENTS.
 8. Run `/op-validate <version>` to assemble the release validation / qualification evidence pack
 
 Show me the full changelog entry, release notes, and validation pack for approval before tagging.
+
+**Do not create the tag without that approval.** Where a repo triggers its release
+pipeline from a `v*` tag, pushing the tag *is* the act of shipping — it builds, signs
+and publishes production images. Treat it as the deploy step it is, not as
+bookkeeping that follows one.
+
+Confirm the tag does not already exist, and that the published release history has no
+gaps. A pipeline that builds on merge but tags by hand will silently skip versions:
+the artifacts ship while the release record stops moving, and nothing fails. If earlier
+releases are untagged, say so — backfilling them is usually the right call before
+adding another.
