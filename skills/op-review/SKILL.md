@@ -4,7 +4,12 @@ description: Multi-lens code review of the current diff, with separation-of-duti
 argument-hint: (none — reviews staged changes or diff against the base branch)
 ---
 
-Review the current staged changes or diff against the base branch (`develop`, falling back to `main`).
+Review the current staged changes, or the diff against the repository's base branch.
+
+Resolve that branch rather than assuming it — this plugin is used across repos on
+different branching models. Prefer the PR's own base when reviewing a PR; otherwise
+take the repository default (`gh repo view --json defaultBranchRef`), falling back to
+`main`.
 
 Run the review as **independent lenses** and merge the results — do not let one concern mask another.
 Where useful, spawn parallel subagents (one per lens) so each looks with fresh eyes, then reconcile:
