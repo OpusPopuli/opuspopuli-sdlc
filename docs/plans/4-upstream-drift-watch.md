@@ -69,3 +69,24 @@ still read as "needs triage" and `/op-issue-triage` classifies them.
 ## Effort
 
 ~1–1.5 focused sessions.
+
+---
+
+## Erratum — 2026-08-24 (#41)
+
+This plan is a historical record and its body is left as written. Two of its design assumptions
+proved wrong in production and were corrected in
+[#41](https://github.com/OpusPopuli/opuspopuli-sdlc/issues/41):
+
+1. **Risk 1 was under-scoped.** It anticipated an endpoint *shape* change making the watcher silently
+   wrong. The failure that actually occurred was subtler: the watcher was silently *right* — it
+   compared checksums correctly and reported no drift for eight weeks — while `CTL-CSA-001`'s
+   human-written description of those bytes had been wrong since the first pin. A checksum proves
+   immutability, not accuracy. Document citations now carry `asserts: { title, issued }`, verified
+   against text extracted from the fetched document.
+2. **The plan had no concept of a source that cannot be polled.** `auto_poll: false` arrived later
+   (#21) and made such sources invisible rather than merely unpolled. They now carry `reverify_days`
+   and age out into their own drift issue.
+
+Also corrected: `npm run pin -- <CTL-ID>` — the remediation step this plan's issue body prescribes —
+skipped already-pinned citations and was a silent no-op. It now requires `--repin` and works.

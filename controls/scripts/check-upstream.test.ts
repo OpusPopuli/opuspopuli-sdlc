@@ -1,7 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadRegistry } from "./registry.ts";
+import { loadRegistry, type Registry } from "./registry.ts";
 import {
+  daysBetween,
+  pinOverdue,
+  staleManualFindings,
+  assertionFailures,
+  supersededIssueDates,
+  issuedDateVariants,
+  assertedDocuments,
   sourceKeyFor,
   pinnableSources,
   manualSources,
@@ -156,4 +163,207 @@ test("a fetch that throws becomes a watcher error, not a crash", async () => {
   assert.deepEqual(findings, []);
   assert.ok(errors.length > 0);
   assert.match(errors[0].message, /boom/);
+});
+
+// --- pin staleness (#41) ---------------------------------------------------
+//
+// The defect these guard: auto_poll:false made a source invisible rather than merely unpolled, so a
+// mislabelled CTL-CSA-001 pin survived eight clean weekly runs.
+
+function manualRegistry(retrieved: string, reverify_days?: number): Registry {
+  return {
+    version: 1,
+    preamble: { intended_use: "x" },
+    profiles: { families: ["gxp-csa"] },
+    frameworks: { "gxp-csa": { label: "GxP", sort: 1 } },
+    controls: [
+      {
+        id: "CTL-TEST-001",
+        title: "t",
+        family: "gxp-csa",
+        jurisdiction: "us",
+        applicability: ["all"],
+        citations: [
+          {
+            adapter: "document",
+            name: "A host-blocked guidance PDF",
+            url: "https://example.gov/doc.pdf",
+            auto_poll: false,
+            ...(reverify_days ? { reverify_days } : {}),
+            pinned: { sha256: "abc", retrieved },
+          } as never,
+        ],
+        implemented_by: [{ type: "skill", ref: "op-validate" }],
+        evidence: [],
+        status: "active",
+      },
+    ],
+  } as Registry;
+}
+
+test("daysBetween counts whole days between ISO dates", () => {
+  assert.equal(daysBetween("2026-01-01", "2026-01-01"), 0);
+  assert.equal(daysBetween("2026-01-01", "2026-01-31"), 30);
+  assert.equal(daysBetween("2026-02-28", "2026-03-01"), 1); // 2026 is not a leap year
+});
+
+test("a pin is overdue only once it passes its re-verification window", () => {
+  const c = { reverify_days: 90, pinned: { retrieved: "2026-01-01" } } as never;
+  assert.equal(pinOverdue(c, "2026-03-31"), false); // 89 days
+  assert.equal(pinOverdue(c, "2026-04-01"), false); // exactly 90 — still inside
+  assert.equal(pinOverdue(c, "2026-04-02"), true); // 91 — overdue
+});
+
+test("a manual source with no reverify_days never ages out (back-compat, and the old bug)", () => {
+  const c = { pinned: { retrieved: "2020-01-01" } } as never;
+  assert.equal(pinOverdue(c, "2026-08-24"), false);
+  assert.deepEqual(staleManualFindings(manualRegistry("2020-01-01"), "2026-08-24"), []);
+});
+
+test("an overdue manual pin becomes a stale-pin drift finding naming its controls", () => {
+  const findings = staleManualFindings(manualRegistry("2026-01-01", 90), "2026-08-24");
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].kind, "stale-pin");
+  assert.deepEqual(findings[0].controlIds, ["CTL-TEST-001"]);
+  assert.match(findings[0].oldValue, /last verified 2026-01-01/);
+});
+
+test("a stale-pin issue is titled distinctly so it can't dedup against a value-drift issue", () => {
+  const [stale] = staleManualFindings(manualRegistry("2026-01-01", 90), "2026-08-24");
+  const value = { ...stale, kind: "value" as const };
+  assert.notEqual(driftIssueTitle(stale), driftIssueTitle(value));
+  assert.match(driftIssueTitle(stale), /re-verification overdue/);
+  const body = driftIssueBody(stale);
+  assert.match(body, /nobody has looked/);
+  assert.match(body, /--include-manual/);
+  assert.match(body, /Do not clear this by widening/);
+});
+
+// --- pin assertions (#41) --------------------------------------------------
+//
+// The deeper defect: a sha256 proves immutability, not accuracy. Nothing checked that a pin's
+// human-written title/date matched the bytes it pinned.
+
+test("issue-date variants cover the ISO and US-guidance spellings", () => {
+  const v = issuedDateVariants("2026-02-02");
+  assert.ok(v.includes("2026-02-02"));
+  assert.ok(v.includes("February 2, 2026"));
+});
+
+test("assertions pass when the document text corroborates title and issue date", () => {
+  const text =
+    "Contains Nonbinding Recommendations Computer Software Assurance for Production and Quality " +
+    "Management System Software Guidance for Industry Document issued on February 2, 2026.";
+  const failures = assertionFailures(
+    { title: "Computer Software Assurance for Production and Quality Management System Software", issued: "2026-02-02" },
+    text
+  );
+  assert.deepEqual(failures, []);
+});
+
+test("assertions catch the exact CTL-CSA-001 defect: right bytes, superseded label", () => {
+  // The Feb 2026 document's real text, checked against the Sept 2025 claim the registry used to make.
+  const febText = "Computer Software Assurance for Production and Quality Management System Software. " +
+    "Document issued on February 2, 2026. This document supersedes Computer Software Assurance for " +
+    "Production and Quality System Software, issued September 24, 2025.";
+  const failures = assertionFailures({ title: "Computer Software Assurance for Production and Quality System Software", issued: "2025-09-24" }, febText);
+  // The superseded title is a substring of the current one, so the title alone cannot catch it. Nor
+  // can plain date containment: the revision quotes the superseded date in its own supersession
+  // clause. Only reading that clause as a NEGATIVE signal catches this. That asymmetry is the point.
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /SUPERSEDES/);
+});
+
+test("assertion checking ignores case, punctuation and whitespace churn", () => {
+  const failures = assertionFailures(
+    { title: "Computer  Software   Assurance" },
+    "computer\nsoftware\tassurance — for production",
+  );
+  assert.deepEqual(failures, []);
+});
+
+test("a wrong title is reported as a mismatch", () => {
+  const failures = assertionFailures({ title: "Some Other Guidance" }, "Computer Software Assurance");
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /does not contain the asserted title/);
+});
+
+test("assertion issue body explains immutability-vs-accuracy, not just the diff", () => {
+  const f: DriftFinding = {
+    key: "document:https://x", label: "FDA guidance", adapter: "document",
+    oldValue: '{"issued":"2025-09-24"}', newValue: "date not found", controlIds: ["CTL-CSA-001"],
+    url: "https://x", kind: "assertion",
+  };
+  assert.match(driftIssueTitle(f), /assertion mismatch/);
+  assert.match(driftIssueBody(f), /bytes have not changed since they were pinned/);
+  assert.match(driftIssueBody(f), /#41/);
+});
+
+// --- registry regression guards (#41) --------------------------------------
+
+test("CTL-CSA-001 asserts the Feb 2026 guidance, not the superseded Sept 2025 one", () => {
+  const csa = reg.controls.find((c) => c.id === "CTL-CSA-001")!;
+  const doc = csa.citations.find((c) => c.adapter === "document") as never as {
+    name: string; asserts?: { title?: string; issued?: string }; reverify_days?: number;
+  };
+  assert.match(doc.name, /Quality Management System Software/);
+  assert.equal(doc.asserts?.issued, "2026-02-02");
+  assert.match(String(doc.asserts?.title), /Quality Management System Software/);
+  // and it is on a clock, so it can never go invisible again
+  assert.ok((doc.reverify_days ?? 0) > 0, "a manual source must carry reverify_days");
+});
+
+test("every auto_poll:false citation carries reverify_days", () => {
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (!isManualDocument(c)) continue;
+      assert.ok(
+        typeof c.reverify_days === "number" && c.reverify_days > 0,
+        `${control.id}: auto_poll:false without reverify_days would be invisible forever`
+      );
+    }
+  }
+});
+
+test("CTL-CSA-001 cites the amended Part 820 (QMSR) the Feb 2026 guidance is written against", () => {
+  const csa = reg.controls.find((c) => c.id === "CTL-CSA-001")!;
+  assert.ok(csa.citations.some((c) => c.adapter === "ecfr" && String(c.cfr_part) === "820"));
+});
+
+test("assertedDocuments finds every document citation carrying asserts", () => {
+  const keys = assertedDocuments(reg).map((s) => s.key);
+  assert.ok(keys.some((k) => k.includes("fda.gov/media/188844")));
+});
+
+test("retrying preserves a newly-added fetcher key (the dropped-adapter bug class)", async () => {
+  const { retrying } = await import("./check-upstream.ts");
+  const stub = {
+    ecfr: async () => "a", document: async () => "b", fedreg: async () => "c",
+    documentText: async () => "text",
+  } as never as Fetchers;
+  const wrapped = retrying(stub, 1);
+  assert.deepEqual(Object.keys(wrapped).sort(), ["document", "documentText", "ecfr", "fedreg"]);
+  assert.equal(await wrapped.documentText!({} as never), "text");
+});
+
+test("supersededIssueDates reads the supersession clause, not every date in the document", () => {
+  const text = "Document issued on February 2, 2026. This document supersedes Computer Software " +
+    "Assurance for Production and Quality System Software, issued September 24, 2025. Contact us in 2027.";
+  const dates = supersededIssueDates(text);
+  assert.deepEqual(dates, ["September 24, 2025"]);
+  // the current issue date is NOT treated as superseded
+  assert.ok(!dates.includes("February 2, 2026"));
+});
+
+test("the corrected Feb 2026 assertion passes against the same text that fails the old one", () => {
+  const febText = "Computer Software Assurance for Production and Quality Management System Software. " +
+    "Document issued on February 2, 2026. This document supersedes Computer Software Assurance for " +
+    "Production and Quality System Software, issued September 24, 2025.";
+  assert.deepEqual(
+    assertionFailures(
+      { title: "Computer Software Assurance for Production and Quality Management System Software", issued: "2026-02-02" },
+      febText
+    ),
+    []
+  );
 });
