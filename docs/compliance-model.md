@@ -126,9 +126,11 @@ Two structural gaps allowed it, both now closed (#41):
   carry `reverify_days`; once a pin ages past its window the watch files an issue demanding a human
   re-verification, and `npm run drift:dry-run -- --include-manual` performs it from an unblocked network.
 - **A pin's human-written claims were never testable.** Document citations now carry
-  `asserts: { title, issued }` — the document's *self-declared* identity. Re-verification extracts text
+  `asserts: { title, issued, version }` — the document's *self-declared* identity. Re-verification extracts text
   from the fetched document and fails if it does not corroborate them, so a mislabelled pin is caught
-  by the tooling rather than by someone eventually reading the PDF.
+  by the tooling rather than by someone eventually reading the PDF. **Every** document citation now
+  carries assertions — the California statute pins assert their enactment line (`Amended by Stats.
+  2024, Ch. 940, Sec. 1. (AB 1824)`), which changes whenever the law does (#43).
 
 The honest generalization: **automated drift detection tells you a source changed; only assertion
 checking tells you that you described the source correctly in the first place.** A control registry

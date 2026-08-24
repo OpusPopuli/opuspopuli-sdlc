@@ -65,11 +65,16 @@ such a citation carries `reverify_days`, and once its pin ages past that window 
 `npm run drift:dry-run -- --include-manual` from an unblocked network. A `fedreg` citation may
 supplement it, but a docket proxy is not a substitute for the artifact (#41).
 
-`asserts: { title, issued }` records what the pinned bytes *claim to be*, in the document's own words.
+`asserts: { title, issued, version }` records what the pinned bytes *claim to be*, in the document's own words.
 A `sha256` proves bytes have not changed; it proves nothing about whether they were described
 correctly at pin time. Re-verification extracts text from the fetched document and fails if it does
 not corroborate the assertions — including when the asserted date turns out to be the one the document
-names as *superseded*.
+names as *superseded*. For statutes, `version` carries the enactment line (`Amended by Stats. 2024,
+Ch. 940, Sec. 1. (AB 1824)`), which changes whenever the law does and so cannot pass vacuously.
+
+Every document citation in the registry carries assertions, verified against live text and
+negative-controlled before commit; tests enforce that a statute pin has a `version` and that two
+citations of one section cannot claim different versions.
 
 The `clause` adapter has no text field — vendoring paywalled text is a schema violation, not a policy
 reminder.

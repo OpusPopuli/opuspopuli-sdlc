@@ -159,7 +159,7 @@ possibly have caught (#41):
 
 | Field | What it does |
 |---|---|
-| `asserts: { title, issued }` | The document's **self-declared** identity. Re-verification extracts text from the fetched document and fails if it doesn't corroborate these. The `issued` check also treats a date named in the document's *supersession clause* as a failure — a revision quotes the date of the version it replaces, so plain containment is not enough. |
+| `asserts: { title, issued, version }` | The document's **self-declared** identity. Re-verification extracts text from the fetched document and fails if it doesn't corroborate these. The `issued` check also treats a date named in the document's *supersession clause* as a failure — a revision quotes the date of the version it replaces, so plain containment is not enough. `version` is the document's own statement of which version it is: for California statutes, the enactment line (`Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)`), which is version-specific by construction and so cannot pass vacuously the way a title can. |
 | `reverify_days` | Maximum age of `pinned.retrieved` before the watch files a "pin re-verification overdue" issue. **Required in practice on every `auto_poll: false` citation** — without it, "CI can't check this" silently becomes "nobody checks this". A test enforces it. |
 
 Verify manual sources from a network the host doesn't block:
@@ -167,6 +167,13 @@ Verify manual sources from a network the host doesn't block:
 ```
 npm run drift:dry-run -- --include-manual   # fetch auto_poll:false sources, compare checksums, verify asserts
 ```
+
+**Write assertions from the source, never from memory.** Every assertion in this registry was tested
+against live text before being committed, and negative-controlled: perturb each field and confirm the
+check fails. An assertion nobody verified is the exact defect `asserts` exists to prevent. Where a
+document's text genuinely cannot corroborate a claim — the CPPA regulations PDF extracts its body but
+not its edition date — assert only what *is* corroborated and record the gap in the citation `note`.
+An assertion that looks verified but isn't is worse than none.
 
 `pin.ts` writes registry.yaml in a **canonical serialized form** (`lineWidth: 0`, no line-wrapping)
 so a re-pin diffs only the changed pin values, not re-flowed paragraphs. A test enforces the

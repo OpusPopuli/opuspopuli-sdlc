@@ -260,6 +260,11 @@
             "issued": {
               "$ref": "#/definitions/isoDate",
               "description": "The issue/revision date the document states on its own face — not the date we retrieved it."
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The document's own statement of which version it is, verbatim enough to appear in its text. For California statutes this is the enactment/amendment provenance line (e.g. 'Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)'), which pins the exact legislative version — a stronger identity than a title, because it changes whenever the law does (#43)."
             }
           }
         },
