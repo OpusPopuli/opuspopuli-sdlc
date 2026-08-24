@@ -150,7 +150,7 @@ removed (they sit inside `asserts`, which is `additionalProperties: false`).
 |---|---|---|---|
 | Author | Claude Code (Anthropic Claude, Opus 5), directed by the repo owner | 2026-08-24 | Attests the change is complete as described, all gates pass, and every assertion was verified and negative-controlled against live sources |
 | Independent reviewer | **NOT PERFORMED** — no reviewer independent of the author/director | — | — |
-| Approver | *pending* | — | "Approved for merge to `main`" |
+| Approver | Rodney Gagnon (repo owner), in-session instruction | 2026-08-24 | "Approved for merge to `main`" — approval of the change for release. Does **not** attest independent review; the approver is also the change's director. |
 
 > Electronic signatures per `CTL-P11-002`: who, when, and what was attested. The reviewer row is left
 > explicitly NOT PERFORMED rather than removed, so the deviation stays visible in the audit trail.
