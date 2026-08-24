@@ -10,9 +10,15 @@
 // Offline pure functions are unit-tested; the live fetch + GitHub REST run only in the workflow.
 import { fileURLToPath } from "node:url";
 import { loadRegistry, type Registry, type Citation } from "./registry.ts";
-import { ecfrLatestAmendment, pinDocument, fedregLatest } from "./pin.ts";
+import { ecfrLatestAmendment, pinDocument, fedregLatest, fetchDocumentText } from "./pin.ts";
 
 type PolledAdapter = "ecfr" | "document" | "fedreg";
+
+// What a finding is *about*. "value" = the source changed. "stale-pin" = we haven't looked in too
+// long. "assertion" = the bytes don't corroborate what the registry claims they are. The latter two
+// exist because CTL-CSA-001 carried a mislabelled pin that no amount of checksum comparison could
+// surface — a sha256 proves immutability, not accuracy (#41).
+export type FindingKind = "value" | "stale-pin" | "assertion";
 
 export interface PinnableSource {
   key: string; // stable dedup/identity key
@@ -29,6 +35,7 @@ export interface DriftFinding {
   newValue: string;
   controlIds: string[];
   url: string;
+  kind?: FindingKind; // absent = "value" (the original behaviour)
 }
 
 export interface WatcherError {
@@ -135,13 +142,186 @@ export function fedregDrifted(pinnedDocNumber: string, liveDocNumber: string): b
   return pinnedDocNumber !== liveDocNumber;
 }
 
+// --- pin staleness (#41) ---------------------------------------------------
+//
+// auto_poll:false excuses a source from *automated* polling; it must not excuse it from being
+// checked at all. Without a clock, an unpolled source is invisible forever — which is exactly how
+// CTL-CSA-001 sat mislabelled through eight clean weekly runs. `reverify_days` puts it back on one.
+
+export function daysBetween(fromIso: string, toIso: string): number {
+  const ms = Date.parse(`${toIso}T00:00:00Z`) - Date.parse(`${fromIso}T00:00:00Z`);
+  return Math.floor(ms / 86_400_000);
+}
+
+export function pinOverdue(c: Citation, today: string): boolean {
+  const days = c.reverify_days as number | undefined;
+  const retrieved = (c.pinned as { retrieved?: string } | undefined)?.retrieved;
+  if (!days || !retrieved) return false;
+  return daysBetween(retrieved, today) > days;
+}
+
+// Manual (unpolled) sources whose pin has aged past its re-verification window.
+export function staleManualFindings(reg: Registry, today: string): DriftFinding[] {
+  const byKey = new Map<string, DriftFinding>();
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (!isManualDocument(c) || !pinOverdue(c, today)) continue;
+      const key = sourceKeyFor(c);
+      if (byKey.has(key)) continue;
+      const retrieved = (c.pinned as { retrieved: string }).retrieved;
+      byKey.set(key, {
+        key,
+        label: sourceLabelFor(c),
+        adapter: "document",
+        oldValue: `last verified ${retrieved} (${daysBetween(retrieved, today)} days ago)`,
+        newValue: `re-verification window is ${c.reverify_days} days`,
+        controlIds: affectedControls(reg, key),
+        url: sourceUrlFor(c),
+        kind: "stale-pin",
+      });
+    }
+  }
+  return [...byKey.values()];
+}
+
+// --- pin assertions (#41) --------------------------------------------------
+//
+// `asserts` records what the pinned bytes are CLAIMED to be, in the document's own words. Comparing
+// it against text extracted from the fetched document is the only check that can catch a pin whose
+// checksum is correct but whose description is not.
+
+export interface PinAssertions {
+  title?: string;
+  issued?: string;
+}
+
+// US federal guidance states its date as "February 2, 2026"; accept that, the ISO form, and a
+// zero-padded variant, so a correct pin isn't reported as a mismatch over formatting.
+export function issuedDateVariants(iso: string): string[] {
+  const [y, m, d] = iso.split("-");
+  const month = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+  ][Number(m) - 1];
+  const day = String(Number(d));
+  return [iso, `${month} ${day}, ${y}`, `${month} ${d}, ${y}`, `${m}/${d}/${y}`].filter(Boolean);
+}
+
+function loosen(s: string): string {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+}
+
+// Dates a document names as belonging to something it SUPERSEDES. Plain containment is not enough
+// to verify an issue date: a revision quotes the date of the version it replaces ("This document
+// supersedes …, issued September 24, 2025"), so the superseded date is present in the current text.
+// That is precisely the case that fooled CTL-CSA-001, so it gets an explicit check.
+export function supersededIssueDates(text: string): string[] {
+  const dates: string[] = [];
+  for (const clause of text.matchAll(/supersedes\b([\s\S]{0,400}?)(?:\.\s|$)/gi)) {
+    for (const d of clause[1].matchAll(/issued\s+(?:on\s+)?([A-Z][a-z]+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/g)) {
+      dates.push(d[1]);
+    }
+  }
+  return dates;
+}
+
+// Returns human-readable mismatch reasons; empty means the text corroborates every assertion.
+// An EMPTY `text` means extraction failed — reported by the caller as an error, not as a mismatch,
+// because "we couldn't read it" and "it says something else" are different facts.
+export function assertionFailures(asserts: PinAssertions, text: string): string[] {
+  const hay = loosen(text);
+  const failures: string[] = [];
+  if (asserts.title && !hay.includes(loosen(asserts.title))) {
+    failures.push(`the document text does not contain the asserted title "${asserts.title}"`);
+  }
+  if (asserts.issued) {
+    const variants = issuedDateVariants(asserts.issued).map(loosen);
+    const superseded = supersededIssueDates(text).map(loosen);
+    if (superseded.some((s) => variants.includes(s))) {
+      failures.push(
+        `the asserted issue date ${asserts.issued} is named by this document as the date of a version it SUPERSEDES — ` +
+          `the pin describes the superseded document, not the one at this URL`
+      );
+    } else if (!variants.some((v) => hay.includes(v))) {
+      failures.push(
+        `the document text does not state the asserted issue date ${asserts.issued} ` +
+          `(tried: ${issuedDateVariants(asserts.issued).join(", ")})`
+      );
+    }
+  }
+  return failures;
+}
+
+export function assertionFinding(reg: Registry, c: Citation, failures: string[]): DriftFinding {
+  const key = sourceKeyFor(c);
+  return {
+    key,
+    label: sourceLabelFor(c),
+    adapter: "document",
+    oldValue: JSON.stringify(c.asserts),
+    newValue: failures.join("; "),
+    controlIds: affectedControls(reg, key),
+    url: sourceUrlFor(c),
+    kind: "assertion",
+  };
+}
+
 // --- issue rendering -------------------------------------------------------
 
+// Stable per source AND per finding kind → one open issue per source per concern. A stale pin and a
+// value change are different asks of the reader, so they must not dedup against each other.
 export function driftIssueTitle(f: DriftFinding): string {
-  return `Upstream drift: ${f.label}`; // stable per source → one open issue per source
+  if (f.kind === "stale-pin") return `Pin re-verification overdue: ${f.label}`;
+  if (f.kind === "assertion") return `Pin assertion mismatch: ${f.label}`;
+  return `Upstream drift: ${f.label}`;
+}
+
+function staleIssueBody(f: DriftFinding): string {
+  return [
+    `A pinned source that the watcher does **not** poll automatically has passed its re-verification window.`,
+    ``,
+    `- **Source:** ${f.label} (\`${f.key}\`)`,
+    `- **State:** ${f.oldValue}`,
+    `- **Policy:** ${f.newValue}`,
+    `- **Affected controls:** ${f.controlIds.join(", ")}`,
+    `- **Source link:** ${f.url}`,
+    ``,
+    `This is **not** a report that the source changed — nobody has looked. \`auto_poll: false\` excuses a`,
+    `source from automated polling (its host blocks datacenter IPs), never from being checked at all.`,
+    ``,
+    `To clear it, from a network that can reach the host:`,
+    ``,
+    `1. \`npm run drift:dry-run -- --include-manual\` — fetches the manual sources, compares their`,
+    `   checksums, and verifies each pin's \`asserts\` (title / issue date) against the document text.`,
+    `2. If the document is unchanged and its assertions hold, \`npm run pin -- <CTL-ID>\` to refresh`,
+    `   \`retrieved\`. If it changed, triage the revision through the lifecycle first.`,
+    ``,
+    `Do not clear this by widening \`reverify_days\` or hand-editing the pin block.`,
+  ].join("\n");
+}
+
+function assertionIssueBody(f: DriftFinding): string {
+  return [
+    `The bytes this pin covers do **not** corroborate what the registry claims they are.`,
+    ``,
+    `- **Source:** ${f.label} (\`${f.key}\`)`,
+    `- **Registry asserts:** \`${f.oldValue}\``,
+    `- **Mismatch:** ${f.newValue}`,
+    `- **Affected controls:** ${f.controlIds.join(", ")}`,
+    `- **Source link:** ${f.url}`,
+    ``,
+    `A \`sha256\` proves the bytes have not changed since they were pinned. It proves nothing about`,
+    `whether they were described correctly at pin time. This check exists because \`CTL-CSA-001\` was`,
+    `pinned to the February 2026 FDA CSA guidance while being labelled as the September 2025 guidance`,
+    `it superseded — a mislabelling no checksum comparison could ever have surfaced (#41).`,
+    ``,
+    `Correct the citation's \`name\`/\`note\`/\`asserts\` to match the document, then re-pin.`,
+  ].join("\n");
 }
 
 export function driftIssueBody(f: DriftFinding): string {
+  if (f.kind === "stale-pin") return staleIssueBody(f);
+  if (f.kind === "assertion") return assertionIssueBody(f);
   const kind =
     f.adapter === "ecfr" ? "amendment date" : f.adapter === "fedreg" ? "Federal Register document number" : "document checksum";
   return [
@@ -194,13 +374,89 @@ export interface Fetchers {
   ecfr: (c: Citation) => Promise<string>;
   document: (c: Citation) => Promise<string>;
   fedreg: (c: Citation) => Promise<string>; // returns the newest document number on the docket
+  documentText?: (c: Citation) => Promise<string>; // for verifying `asserts` (#41)
 }
 
 const realFetchers: Fetchers = {
   ecfr: (c) => ecfrLatestAmendment(c.cfr_title as number, String(c.cfr_part), c.cfr_section as string | undefined),
   document: (c) => pinDocument(String(c.url), (c.normalization as "raw" | "text") ?? "raw"),
   fedreg: async (c) => (await fedregLatest(String(c.docket))).document_number,
+  documentText: (c) => fetchDocumentText(String(c.url), (c.normalization as "raw" | "text") ?? "raw"),
 };
+
+// Every document citation carrying `asserts`, deduped by source. Includes manual ones — assertions
+// are checked wherever the fetch can actually happen, which for host-blocked sources is a laptop.
+export function assertedDocuments(reg: Registry): PinnableSource[] {
+  const byKey = new Map<string, PinnableSource>();
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (c.adapter !== "document" || !c.asserts) continue;
+      const key = sourceKeyFor(c);
+      if (!byKey.has(key)) byKey.set(key, { key, label: sourceLabelFor(c), adapter: "document", citation: c });
+    }
+  }
+  return [...byKey.values()];
+}
+
+// The `--include-manual` pass: fetch the sources CI can't reach, compare their checksums, and verify
+// every pin's assertions against the document's own text. Run from a network that can reach the host.
+export async function collectManual(
+  reg: Registry,
+  fetchers: Fetchers = realFetchers
+): Promise<{ findings: DriftFinding[]; errors: WatcherError[] }> {
+  const findings: DriftFinding[] = [];
+  const errors: WatcherError[] = [];
+  const seen = new Set<string>();
+
+  const targets = [
+    ...pinnableSources(reg).filter((s) => s.adapter === "document"),
+    ...assertedDocuments(reg),
+    ...manualDocumentSources(reg),
+  ];
+
+  for (const src of targets) {
+    if (seen.has(src.key)) continue;
+    seen.add(src.key);
+    const c = src.citation;
+    try {
+      const pinned = (c.pinned as { sha256?: string } | undefined)?.sha256;
+      if (pinned) {
+        const live = await fetchers.document(c);
+        if (documentDrifted(pinned, live)) {
+          findings.push({
+            key: src.key, label: src.label, adapter: "document", oldValue: pinned, newValue: live,
+            controlIds: affectedControls(reg, src.key), url: sourceUrlFor(c), kind: "value",
+          });
+          continue; // the bytes moved; assertions describe bytes that no longer exist
+        }
+      }
+      if (c.asserts && fetchers.documentText) {
+        const text = await fetchers.documentText(c);
+        if (!text) {
+          errors.push({ key: src.key, label: src.label, message: "could not extract text — assertions unverified" });
+          continue;
+        }
+        const failures = assertionFailures(c.asserts as PinAssertions, text);
+        if (failures.length > 0) findings.push(assertionFinding(reg, c, failures));
+      }
+    } catch (e) {
+      errors.push({ key: src.key, label: src.label, message: (e as Error).message });
+    }
+  }
+  return { findings, errors };
+}
+
+function manualDocumentSources(reg: Registry): PinnableSource[] {
+  const byKey = new Map<string, PinnableSource>();
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (!isManualDocument(c)) continue;
+      const key = sourceKeyFor(c);
+      if (!byKey.has(key)) byKey.set(key, { key, label: sourceLabelFor(c), adapter: "document", citation: c });
+    }
+  }
+  return [...byKey.values()];
+}
 
 export async function collect(
   reg: Registry,
@@ -248,7 +504,13 @@ export function retrying(fetchers: Fetchers, attempts = 3): Fetchers {
     }
     throw lastErr;
   };
-  return { ecfr: wrap(fetchers.ecfr), document: wrap(fetchers.document), fedreg: wrap(fetchers.fedreg) };
+  // Mapped over the object's own keys rather than listed by hand: the original bug here was a
+  // hand-written literal that silently dropped a newly-added fetcher. Adding one can't regress it now.
+  const out: Record<string, unknown> = {};
+  for (const [name, fn] of Object.entries(fetchers)) {
+    out[name] = typeof fn === "function" ? wrap(fn as (c: Citation) => Promise<unknown>) : fn;
+  }
+  return out as unknown as Fetchers;
 }
 
 // --- GitHub REST (thin IO; the decisions above are the tested part) --------
@@ -290,16 +552,35 @@ async function createIssue(repo: string, token: string, spec: IssueSpec): Promis
   if (!res.ok) throw new Error(`GitHub create issue → HTTP ${res.status}`);
 }
 
+export function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
 async function main(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
+  const includeManual = process.argv.includes("--include-manual");
   const reg = loadRegistry();
-  const { findings, errors } = await collect(reg, retrying(realFetchers));
+  const fetchers = retrying(realFetchers);
+  const { findings, errors } = await collect(reg, fetchers);
+
+  // Offline: a manual source past its re-verification window is drift in its own right (#41).
+  findings.push(...staleManualFindings(reg, todayIso()));
+
+  if (includeManual) {
+    const extra = await collectManual(reg, fetchers);
+    findings.push(...extra.findings);
+    errors.push(...extra.errors);
+  }
 
   console.log(`checked ${pinnableSources(reg).length} pinnable source(s): ${findings.length} drifted, ${errors.length} error(s)`);
-  for (const f of findings) console.log(`  DRIFT ${f.label}: ${f.oldValue} → ${f.newValue} (controls: ${f.controlIds.join(", ")})`);
+  for (const f of findings) console.log(`  ${(f.kind ?? "value").toUpperCase()} ${f.label}: ${f.oldValue} → ${f.newValue} (controls: ${f.controlIds.join(", ")})`);
   for (const e of errors) console.log(`  ERROR ${e.label}: ${e.message}`);
   const manual = manualSources(reg);
-  if (manual.length > 0) console.log(`manual re-verification (host blocks automated access): ${manual.join("; ")}`);
+  if (manual.length > 0 && !includeManual) {
+    console.log(`manual re-verification (host blocks automated access): ${manual.join("; ")}`);
+    console.log("  ^ these are NOT checked by this run. They age out via reverify_days and file their own issue.");
+    console.log("  Run `npm run drift:dry-run -- --include-manual` from an unblocked network to verify them.");
+  }
   console.log(COPYRIGHTED_NOTE);
 
   if (dryRun) {

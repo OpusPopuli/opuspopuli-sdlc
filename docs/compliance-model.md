@@ -70,9 +70,11 @@ The regulatory direction of travel is *away* from document-heavy legacy **CSV** 
 Validation — script every requirement, run IQ/OQ/PQ regardless of risk, and treat documentation as
 the deliverable) and *toward* **CSA** (Computer Software Assurance): risk-proportionate assurance,
 critical thinking over ceremony, and evidence as a byproduct of the work rather than its purpose.
-FDA's *Computer Software Assurance for Production and Quality System Software* guidance — finalized
-2025-09-24, pinned here as `CTL-CSA-001` and watched for revision by the upstream drift job — is the
-current articulation of that shift.
+FDA's *Computer Software Assurance for Production and Quality Management System Software* guidance —
+issued **2026-02-02**, superseding the 2025-09-24 guidance of the near-identical name, and pinned here
+as `CTL-CSA-001` — is the current articulation of that shift. The revision tracks the amended 21 CFR
+Part 820 (the **QMSR**, which incorporates ISO 13485:2016 by reference; final rule 89 FR 7496,
+effective 2026-02-02), now cited alongside it in the same control.
 
 This plugin is CSA-native by construction. It adds **no** validation master plan, **no** scripted
 IQ/OQ/PQ document tree, **no** ceremony proportional to nothing. The risk register in every
@@ -107,6 +109,30 @@ The control mapping is not a document that rots — CI reconciles it continuousl
   against the committed pins and files a triage-ready issue per changed source — routed into
   `op-issue-triage`, so a regulation change becomes an ordinary intake item in this SDLC's own
   backlog. This is the automated, CSA-native replacement for a manual periodic-review ceremony.
+
+### What drift detection cannot do (and what we added because of it)
+
+A checksum proves a source's bytes have not changed since they were pinned. It proves nothing about
+whether those bytes were *described correctly* at pin time. `CTL-CSA-001` demonstrated the difference:
+it was pinned on 2026-07-30 to the correct bytes of the February 2026 CSA guidance while being
+labelled as the September 2025 guidance that document superseded. Eight consecutive weekly runs
+reported no drift — accurately. The checksum had not moved. The description had never been true.
+
+Two structural gaps allowed it, both now closed (#41):
+
+- **A source excluded from automated polling was excluded from checking entirely.** `auto_poll: false`
+  exists because some hosts (fda.gov) block datacenter IPs, so CI genuinely cannot fetch them. It had
+  no clock, so "the watcher can't check this" silently became "nobody checks this". Such citations now
+  carry `reverify_days`; once a pin ages past its window the watch files an issue demanding a human
+  re-verification, and `npm run drift:dry-run -- --include-manual` performs it from an unblocked network.
+- **A pin's human-written claims were never testable.** Document citations now carry
+  `asserts: { title, issued }` — the document's *self-declared* identity. Re-verification extracts text
+  from the fetched document and fails if it does not corroborate them, so a mislabelled pin is caught
+  by the tooling rather than by someone eventually reading the PDF.
+
+The honest generalization: **automated drift detection tells you a source changed; only assertion
+checking tells you that you described the source correctly in the first place.** A control registry
+needs both.
 
 ## Two AI systems, kept distinct
 

@@ -121,7 +121,7 @@ redesign.
 |---|---|---|---|
 | `ecfr` | US federal regulations (public domain) | latest `amendment_date` for the part/section via the [eCFR Versioner API](https://www.ecfr.gov/developers/documentation/api/v1) | poll for newer amendment dates |
 | `eurlex` | EU law by CELEX/ELI (freely reusable) — reserved for packs #7/#9 | consolidation date | poll for newer consolidated versions |
-| `document` | Public guidance docs / statute pages | `sha256` + retrieval date; `normalization: raw` (bytes, PDFs) or `text` (markup-stripped, HTML — template churn doesn't fire false alarms) | re-fetch and compare checksum |
+| `document` | Public guidance docs / statute pages | `sha256` + retrieval date; `normalization: raw` (bytes, PDFs) or `text` (markup-stripped, HTML — template churn doesn't fire false alarms) | re-fetch and compare checksum; plus `asserts` / `reverify_days` (below) |
 | `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO/IEC standards) | none — identifier only | none (manual new-edition checks) |
 
 ### The no-vendoring boundary
@@ -141,6 +141,32 @@ runner via `workflow_dispatch`. `pin.ts` preserves YAML comments and flips
 `status` to `active` when a control's last pin lands. A `pin-pending` entry is an honest
 statement that the citation has not yet been verified against the source — never hand-write a
 pin block.
+
+**Re-pinning.** `pin.ts` skips any citation that already has a `pinned:` block, so the re-pin step
+that upstream-drift remediation calls for needs `--repin`:
+
+```
+npm run pin -- CTL-CSA-001 --repin    # re-fetch and overwrite this control's pins
+```
+
+`--repin` requires an explicit control ID — it overwrites verified pins, so it is deliberately not a
+bulk operation, and `--all-pending` (the CI path) still cannot overwrite anything.
+
+**A checksum proves immutability, not accuracy.** Two fields exist because `CTL-CSA-001` was pinned
+to the correct bytes of the February 2026 FDA CSA guidance while being *labelled* as the September
+2025 guidance that document superseded — a mislabelling that eight clean weekly drift runs could not
+possibly have caught (#41):
+
+| Field | What it does |
+|---|---|
+| `asserts: { title, issued }` | The document's **self-declared** identity. Re-verification extracts text from the fetched document and fails if it doesn't corroborate these. The `issued` check also treats a date named in the document's *supersession clause* as a failure — a revision quotes the date of the version it replaces, so plain containment is not enough. |
+| `reverify_days` | Maximum age of `pinned.retrieved` before the watch files a "pin re-verification overdue" issue. **Required in practice on every `auto_poll: false` citation** — without it, "CI can't check this" silently becomes "nobody checks this". A test enforces it. |
+
+Verify manual sources from a network the host doesn't block:
+
+```
+npm run drift:dry-run -- --include-manual   # fetch auto_poll:false sources, compare checksums, verify asserts
+```
 
 `pin.ts` writes registry.yaml in a **canonical serialized form** (`lineWidth: 0`, no line-wrapping)
 so a re-pin diffs only the changed pin values, not re-flowed paragraphs. A test enforces the
@@ -165,3 +191,11 @@ via `npm run pin` is part of the fix), not silently absorbed. On a fetch/API err
 "watcher broken" issue rather than passing green. Copyrighted frameworks (`clause` adapter) are not
 polled — their text is not fetchable, so new-edition checks stay manual. This is the automated,
 CSA-native replacement for a manual periodic-review ceremony.
+
+**What it cannot do.** The watch answers "did this source change since we pinned it?" — never "did we
+describe it correctly when we pinned it?". Sources it cannot fetch (`auto_poll: false`) it does not
+check at all; it reports them as overdue via `reverify_days` and a human clears them with
+`--include-manual`. Treat a green weekly run as evidence that nothing moved, not as evidence that the
+registry is right. The `fedreg` adapter in particular watches *docket activity*, which is a proxy: FDA
+issued the 2026-02-02 CSA revision with no new notice on docket `FDA-2022-D-0795`, so that signal
+provably did not fire for it. A proxy signal supplements the artifact checksum; it never replaces it.

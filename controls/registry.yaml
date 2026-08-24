@@ -222,24 +222,35 @@ controls:
         note: (a) validation of systems
         pinned:
           amendment_date: 2016-12-29
-          checked: 2026-07-30
+          checked: 2026-08-24
+      - adapter: ecfr
+        cfr_title: 21
+        cfr_part: "820"
+        note: Quality Management System Regulation (QMSR) — ISO 13485:2016 incorporated by reference; final rule 89 FR 7496, effective 2026-02-02. The Feb 2026 CSA guidance is written against this amended Part 820, which is why it is cited here (#41).
+        pinned:
+          amendment_date: 2026-02-04
+          checked: 2026-08-24
       - adapter: document
-        name: FDA guidance — Computer Software Assurance for Production and Quality System Software
+        name: FDA guidance — Computer Software Assurance for Production and Quality Management System Software
         url: https://www.fda.gov/media/188844/download
         normalization: raw
         auto_poll: false
-        note: Final guidance PDF (finalized 2025-09-24). fda.gov's CDN 404s datacenter IPs, so the upstream drift watch cannot re-fetch this from CI — the sha256 records the last manually-verified state, and the fedreg citation below is the automated signal for revisions.
+        reverify_days: 90
+        asserts:
+          title: Computer Software Assurance for Production and Quality Management System Software
+          issued: 2026-02-02
+        note: "Final guidance PDF, issued 2026-02-02; supersedes the 2025-09-24 guidance of the near-identical name (\"Quality System Software\"). fda.gov's CDN 404s datacenter IPs, so the watch cannot re-fetch this from CI — hence auto_poll:false, reverify_days:90 to force a human re-verification on a clock, and asserts:{} so that re-verification checks the document's self-declared identity rather than trusting this note. History (#41): pinned 2026-07-30 with a correct checksum but labelled as the superseded Sept 2025 guidance; the mislabelling survived eight clean weekly runs because a sha256 proves immutability, not accuracy."
         pinned:
           sha256: 11e2e21f5eb226b56a578da44e732965a2318e9b983422c6a58e51bc7b2e223a
-          retrieved: 2026-07-30
+          retrieved: 2026-08-24
       - adapter: fedreg
         name: FDA CSA guidance — Federal Register docket
         docket: FDA-2022-D-0795
-        note: Free federalregister.gov API (no key, CI-reachable). A new document on this docket signals a revision to the CSA guidance — the automated drift signal that the IP-blocked PDF above cannot provide.
+        note: "Free federalregister.gov API (no key, CI-reachable). PARTIAL COVERAGE — verified 2026-08-24: FDA issued the 2026-02-02 revision WITHOUT a new notice on this docket (newest remains 2025-18468 / 2025-09-24), so this signal did not and structurally cannot fire for that revision. It watches docket activity, not the guidance document; it supplements the checksum + reverify_days on the PDF above, and must not be treated as a substitute for them (#41)."
         pinned:
           latest_document_number: 2025-18468
           latest_publication_date: 2025-09-24
-          checked: 2026-07-31
+          checked: 2026-08-24
     implemented_by:
       - type: skill
         ref: op-validate

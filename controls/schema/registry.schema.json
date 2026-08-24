@@ -240,7 +240,28 @@
         "auto_poll": {
           "type": "boolean",
           "default": true,
-          "description": "false = the upstream drift watch (#4) skips re-fetching this source because its host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). The sha256 pin still records the last manually-verified state; pair with a fedreg citation for the automated signal. Listed as 'manual re-verification' in the watcher summary."
+          "description": "false = the upstream drift watch (#4) skips re-fetching this source because its host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). The sha256 pin still records the last manually-verified state; pair with a fedreg citation for the automated signal. Listed as 'manual re-verification' in the watcher summary. NOT a licence to stop checking — set reverify_days so the pin ages out (#41)."
+        },
+        "reverify_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Maximum age, in days, of pinned.retrieved before the watch files a drift issue demanding human re-verification. Required in practice for auto_poll:false sources — without it an unpolled source is invisible forever, which is how CTL-CSA-001 carried a mislabelled pin undetected (#41)."
+        },
+        "asserts": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "What the pinned bytes are CLAIMED to be, in the document's own words. A sha256 proves the bytes have not changed; it does not prove they are the document you think. These fields make the claim falsifiable: re-verification extracts text from the fetched document and fails if it does not corroborate them (#41).",
+          "properties": {
+            "title": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The document's self-declared title, verbatim enough to appear in its text."
+            },
+            "issued": {
+              "$ref": "#/definitions/isoDate",
+              "description": "The issue/revision date the document states on its own face — not the date we retrieved it."
+            }
+          }
         },
         "note": { "type": "string" },
         "pinned": {

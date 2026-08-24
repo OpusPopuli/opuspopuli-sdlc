@@ -62,3 +62,19 @@ upstream→triage). `op-validate` sections in IQ/OQ/PQ-legible terms — no new 
 ## Effort
 
 ~1.5–2 focused sessions.
+
+---
+
+## Erratum — 2026-08-24 (#41)
+
+This plan is a historical record and its body is left as written. One statement it made was wrong at
+the time of writing:
+
+> anchored to the pinned FDA CSA guidance (finalized 2025-09-24)
+
+FDA superseded that guidance on **2026-02-02** with *Computer Software Assurance for Production and
+Quality Management System Software*, and `CTL-CSA-001` was in fact already pinned to the February 2026
+document's bytes — under the September 2025 label. The prose this plan produced in
+`docs/compliance-model.md` inherited the error and was corrected in
+[#41](https://github.com/OpusPopuli/opuspopuli-sdlc/issues/41). See
+[`docs/plans/41-csa-supersession-repin.md`](41-csa-supersession-repin.md).

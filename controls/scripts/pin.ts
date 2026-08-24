@@ -6,6 +6,7 @@
 // Comments in registry.yaml are preserved (yaml Document API).
 import { readFileSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import { inflateSync } from "node:zlib";
 import { parseDocument, type Document } from "yaml";
 import { REGISTRY_PATH, REGISTRY_YAML_OPTIONS } from "./registry.ts";
 
@@ -63,6 +64,44 @@ export async function pinDocument(url: string, normalization: "raw" | "text"): P
   return sha256Hex(Buffer.from(await res.arrayBuffer()));
 }
 
+// Best-effort text out of a PDF, for verifying a pin's `asserts` against the bytes it pins (#41).
+// Inflates FlateDecode content streams and collects PDF literal strings — enough to find a cover-page
+// title and issue date in FDA-style guidance PDFs. Deliberately not a general PDF parser: subset fonts
+// with custom encodings yield noise, and image-only pages yield nothing. Callers must treat an empty
+// or non-corroborating result as "could not verify", never as "verified false" on its own.
+export function extractPdfText(buf: Buffer): string {
+  const chunks: Buffer[] = [];
+  for (const m of buf.toString("latin1").matchAll(/stream\r?\n/g)) {
+    const start = m.index! + m[0].length;
+    const end = buf.indexOf("endstream", start, "latin1");
+    if (end < 0) continue;
+    try {
+      chunks.push(zlibInflate(buf.subarray(start, end)));
+    } catch {
+      // not a Flate stream (image, already-plain, or a filter we don't handle) — skip it
+    }
+  }
+  const raw = Buffer.concat(chunks).toString("latin1");
+  const literals = raw.match(/\((?:[^()\\]|\\.)*\)/g) ?? [];
+  const text = literals.map((s) => s.slice(1, -1)).join("");
+  // drop bytes that can't be text so font-subset noise doesn't create phantom matches
+  return text.replace(/[^\x20-\x7e]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function zlibInflate(b: Buffer): Buffer {
+  return inflateSync(b);
+}
+
+// The text of a document as the assertion checker should see it: markup-stripped for HTML sources,
+// extracted for PDFs. Mirrors pinDocument()'s normalization choice so both look at the same artifact.
+export async function fetchDocumentText(url: string, normalization: "raw" | "text"): Promise<string> {
+  const res = await fetchOk(url);
+  if (normalization === "text") return normalizeText(await res.text());
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.subarray(0, 5).toString("latin1") === "%PDF-") return extractPdfText(buf);
+  return buf.toString("utf8").replace(/\s+/g, " ").trim();
+}
+
 // Newest document on a Federal Register docket via the free federalregister.gov API (no key).
 // A new document = a guidance revision to watch — the drift signal for sources whose own host
 // blocks datacenter IPs. Endpoint shape verified at runtime; any surprise throws loudly.
@@ -109,10 +148,19 @@ async function pinCitation(citation: any): Promise<void> {
 async function main() {
   const args = process.argv.slice(2);
   const allPending = args.includes("--all-pending");
+  // Without this, an already-pinned citation is skipped forever — which made the `npm run pin -- <CTL-ID>`
+  // re-pin step that the drift watcher's own issue body prescribes a silent no-op (#41). Re-pinning is
+  // the remediation path for upstream drift, so it has to actually re-pin. Scoped to an explicit flag so
+  // the default (--all-pending, run from CI) still can't overwrite a verified pin by accident.
+  const repin = args.includes("--repin");
   const targetId = args.find((a) => a.startsWith("CTL-"));
   const registryPath = args.find((a) => a.endsWith(".yaml")) ?? REGISTRY_PATH;
   if (!allPending && !targetId) {
-    console.error("usage: pin.ts (--all-pending | CTL-XXX-000) [registry.yaml]");
+    console.error("usage: pin.ts (--all-pending | CTL-XXX-000 [--repin]) [registry.yaml]");
+    process.exit(2);
+  }
+  if (repin && !targetId) {
+    console.error("--repin requires an explicit CTL-XXX-000 — it overwrites verified pins, so it is never a bulk operation");
     process.exit(2);
   }
 
@@ -130,7 +178,8 @@ async function main() {
     for (const citation of (control.get("citations") as any).items) {
       const adapter = citation.get("adapter");
       const pinnable = adapter === "ecfr" || adapter === "document" || adapter === "eurlex" || adapter === "fedreg";
-      if (!pinnable || citation.has("pinned")) continue;
+      if (!pinnable) continue;
+      if (citation.has("pinned") && !repin) continue;
       try {
         await pinCitation(citation);
         pinnedCount++;

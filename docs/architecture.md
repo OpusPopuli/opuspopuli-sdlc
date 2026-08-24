@@ -53,15 +53,26 @@ redesign. `pin.ts` writes pins; `check-upstream.ts` watches them.
 | Adapter | Sources | Pinned by | Watched by (#4) |
 |---|---|---|---|
 | `ecfr` | US federal regulations | latest amendment date via the eCFR Versioner API | newer amendment date |
-| `document` | Guidance PDFs / statute pages | URL + `sha256` (`raw` bytes, or `text` = markup-stripped) | checksum change (unless `auto_poll: false`) |
+| `document` | Guidance PDFs / statute pages | URL + `sha256` (`raw` bytes, or `text` = markup-stripped), optionally `asserts` | checksum change; pin age (`reverify_days`); assertion mismatch |
 | `fedreg` | Federal Register dockets | newest document number via the federalregister.gov API | new document on the docket |
 | `eurlex` | EU law by CELEX/ELI | *(reserved for the GDPR pack, #7)* | *(reserved)* |
 | `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO) | not pinned — identifier only | not watched (manual) |
 
 `auto_poll: false` marks a `document` source whose host blocks datacenter IPs (e.g. FDA PDFs 404
-from CI runners); the watcher skips it and it is paired with a `fedreg` citation for the automated
-signal. The `clause` adapter has no text field — vendoring paywalled text is a schema violation, not
-a policy reminder.
+from CI runners); the watcher does not fetch it from CI. It is **not** an exemption from checking —
+such a citation carries `reverify_days`, and once its pin ages past that window the watch files a
+"pin re-verification overdue" issue that a human clears with
+`npm run drift:dry-run -- --include-manual` from an unblocked network. A `fedreg` citation may
+supplement it, but a docket proxy is not a substitute for the artifact (#41).
+
+`asserts: { title, issued }` records what the pinned bytes *claim to be*, in the document's own words.
+A `sha256` proves bytes have not changed; it proves nothing about whether they were described
+correctly at pin time. Re-verification extracts text from the fetched document and fails if it does
+not corroborate the assertions — including when the asserted date turns out to be the one the document
+names as *superseded*.
+
+The `clause` adapter has no text field — vendoring paywalled text is a schema violation, not a policy
+reminder.
 
 ### Pinning
 
@@ -70,6 +81,13 @@ number) plus the check date, then flips `status` to `active`. It preserves YAML 
 in a canonical, minimal-diff form (`lineWidth: 0`) so a re-pin diffs only the changed values. Pins
 are produced where the network reaches the sources — normally a developer machine or a CI runner;
 `pin-pending` is an honest "not yet verified against the source", never hand-write a pin.
+
+An already-pinned citation is skipped unless `--repin` is passed with an explicit control ID
+(`npm run pin -- CTL-CSA-001 --repin`). Re-pinning is the remediation path for upstream drift, so it
+has to actually re-fetch; requiring the ID keeps it from ever being a bulk overwrite of verified pins.
+The pin block is machine-produced, but the citation's `name`, `note` and `asserts` are human-authored
+— which is exactly where `CTL-CSA-001` went wrong, and why `asserts` is now verified against the bytes
+rather than trusted (#41).
 
 ## Compliance profiles (how a consuming repo scopes coverage)
 
@@ -103,6 +121,14 @@ The control mapping is reconciled continuously, in two directions:
   regulation change is reviewed through the lifecycle, not silently absorbed. On a fetch/API error
   it files one "watcher broken" issue rather than passing green.
 
+  It reports three kinds of finding: a **value change** (the source moved), a **stale pin** (a source
+  it cannot poll has aged past `reverify_days` — nobody has looked), and an **assertion mismatch**
+  (the bytes do not corroborate what the registry says they are). The last two exist because a clean
+  checksum comparison is compatible with a completely wrong pin: `CTL-CSA-001` cited the September
+  2025 FDA CSA guidance while pinning the bytes of its February 2026 replacement, and eight weekly
+  runs reported no drift — correctly (#41). Treat green as "nothing moved", not as "the registry is
+  right".
+
 ## Toolchain
 
 Single-language **TypeScript**, run via Node's native type-stripping (Node ≥ 22.6, pinned by
@@ -115,8 +141,8 @@ Single-language **TypeScript**, run via Node's native type-stripping (Node ≥ 2
 | `npm run docs:generate` / `docs:check` | Render / verify the generated control-mapping table |
 | `npm run reconcile` | Registry ↔ skills/hooks/docs cross-checks (offline) |
 | `npm run profile:check` | Validate a compliance profile against the registry |
-| `npm run pin` | Fetch sources and write pins (network) |
-| `npm run drift:check` / `drift:dry-run` | Compare live sources to pins; file issues / print only |
+| `npm run pin` | Fetch sources and write pins (network). `-- <CTL-ID> --repin` re-fetches an already-pinned control |
+| `npm run drift:check` / `drift:dry-run` | Compare live sources to pins; file issues / print only. `-- --include-manual` also fetches `auto_poll: false` sources and verifies their `asserts` |
 | `npm run registry:format` | Rewrite the registry in canonical minimal-diff form |
 | `npm test` | Run the `node:test` suites (offline) |
 | `npm run check` | The CI gate: validate + docs:check + reconcile + profile:check + test |
