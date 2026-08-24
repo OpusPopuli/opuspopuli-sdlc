@@ -105,8 +105,11 @@ Stated plainly, because a validation note that only reports successes is not evi
    human control with automated prompting, not an automated control.
 5. **Only `CTL-CSA-001` carries `asserts` today.** The `CTL-CCPA-*` document pins have verified
    checksums but still-untested descriptions. Backfill is a filed follow-up, not done here.
-6. **This change is self-reviewed.** It carries no independent human review signature at time of
-   writing; see the change record's separation-of-duties section.
+6. **This change was not independently reviewed.** Author, director and approver are the same party;
+   merge was approved by the repo owner on 2026-08-24. The `CTL-SOD-001` deviation is recorded in the
+   change record rather than waived. Treat the `CTL-CSA-001` re-pin as director-approved, not
+   peer-reviewed — the underlying facts are reproducible from the commands above, which is what an
+   auditor should re-run rather than relying on the signature.
 
 ## AI tool qualification note (`CTL-AIQ-001`)
 

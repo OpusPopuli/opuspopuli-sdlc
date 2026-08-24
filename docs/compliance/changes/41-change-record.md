@@ -121,14 +121,30 @@ egress is unchanged in scope: the same three public government hosts, plus `--in
 opt-in and never runs in CI. `extractPdfText` inflates untrusted bytes — bounded by `inflateSync` and
 wrapped in try/catch per stream, with failures skipped rather than thrown; output is filtered to
 printable ASCII before matching, so malformed PDFs degrade to "could not verify" rather than crashing
-or producing phantom matches. Pre-push gate: to run on push.
+or producing phantom matches. Pre-push gate: ran on push, passed. CI on PR #45 (`drift`, plugin
+version guard): both green.
 
 ## Separation of duties
 
-⚠️ **Self-review — countersignature required.** Authored by Claude Code under human direction; no
-independent human reviewer has yet reviewed the diff. Per `CTL-SOD-001` this record cannot be
-considered complete until a human other than the change's director countersigns below. The PR is the
-review vehicle.
+⚠️ **Separation of duties NOT satisfied — recorded as a deviation, not waived.**
+
+`CTL-SOD-001` calls for review by someone other than the change's author/director. That did not
+happen. This change was authored by Claude Code, directed by the repo owner, and approved for merge by
+the same repo owner on 2026-08-24 (instruction: "merge it"). Author, director and approver are one
+party; no independent human reviewed the diff.
+
+This is recorded rather than papered over, because a change record whose signatures are optimistic is
+worse than no change record. What partially compensates, stated without overclaiming:
+
+- All gates pass and are independently reproducible from the commands in this record.
+- The fix was qualified against live infrastructure by a negative control, not only by its own tests —
+  and that negative control caused a weaker first implementation to be rejected before merge.
+- The change is fully reversible (see rollback) and touches no regulated data, no runtime code path,
+  and no consuming repo.
+
+For a change carrying real risk, this deviation would need an independent countersignature before
+merge. Anyone reviewing `CTL-CSA-001` after the fact should treat the re-pin as director-approved,
+not peer-reviewed.
 
 ## Rollback plan
 
@@ -143,12 +159,13 @@ safe: the new schema fields are optional, so an older registry validates against
 | Role | Identity | Date | Meaning of signature |
 |---|---|---|---|
 | Author | Claude Code (Anthropic Claude, Opus 5), directed by the repo owner | 2026-08-24 | Attests the change is complete as described, all gates pass, and the evidence above was produced by the commands shown |
-| Independent reviewer | **UNSIGNED — required** | — | Attests the diff was independently reviewed and the re-pin is correct |
-| Approver | **UNSIGNED — required** | — | "Approved for merge to `main`" |
+| Independent reviewer | **NOT PERFORMED** — no reviewer independent of the author/director | — | — |
+| Approver | Rodney Gagnon (repo owner), in-session instruction "merge it" | 2026-08-24 | "Approved for merge to `main`" — approval of the change for release. Does **not** attest independent review; the approver is also the change's director. |
 
-> Electronic signatures per `CTL-P11-002`: who, when, and what was attested. Unsigned rows are
-> deliberately left blank — no approval is fabricated. This record is not evidence of approval until
-> a human signs it.
+> Electronic signatures per `CTL-P11-002`: who, when, and what was attested. The approver row records
+> the actual instruction given and is scoped precisely to what it means — approval to merge, not a
+> claim of independent review. The reviewer row is left explicitly NOT PERFORMED rather than removed,
+> so the deviation is visible in the audit trail instead of absent from it.
 
 ## Follow-ups filed
 
