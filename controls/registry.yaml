@@ -318,7 +318,11 @@ controls:
         name: Cal. Civ. Code § 1798.140 (CCPA/CPRA definitions)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140
         normalization: text
-        note: Defines "personal information" (broader than classic PII) and "sensitive personal information"; anchors what op-data-scan looks for.
+        asserts:
+          title: California Code, CIV 1798.140
+          version: Amended by Stats. 2025, Ch. 67, Sec. 27. (AB 1170)
+          issued: 2026-01-01
+        note: Defines "personal information" (broader than classic PII) and "sensitive personal information"; anchors what op-data-scan looks for. The asserted version is the section's own enactment line, so a legislative amendment fails the assertion as well as moving the checksum (#43).
         pinned:
           sha256: 989c984ff5013028214e1c1e59bdf73d4cb7beb9191975c9082325021bbc37c6
           retrieved: 2026-07-31
@@ -326,7 +330,9 @@ controls:
         name: CPPA final CCPA regulations, Cal. Code Regs. tit. 11 div. 6 (text of 2023-03-29)
         url: https://cppa.ca.gov/regulations/pdf/20230329_final_regs_text.pdf
         normalization: raw
-        note: Regulations elaborating the statutory definitions and business handling duties. Dated final-text PDF — stable bytes; a newer adopted text is a drift signal (#4).
+        asserts:
+          title: means the California Consumer Privacy Act of 2018
+        note: "Regulations elaborating the statutory definitions and business handling duties. Dated final-text PDF — stable bytes; a newer adopted text is a drift signal (#4). ASSERTION LIMITATION (#43): extractPdfText recovers the body text but NOT the edition date — \"March 29\", \"Title 11\" and \"division 6\" are all absent from the extractable text, which is interleaved with accessibility-report metadata and octal-escaped punctuation. The 2023-03-29 edition therefore rests on the publisher's dated filename plus the sha256, not on anything the document says about itself; only the body-identity assertion above is corroborated. An assertion that looks verified but is not would be worse than none."
         pinned:
           sha256: 9bbda51893703afe9ef45249905e09ab1d278eaba2a6158af17e2c5f39696e72
           retrieved: 2026-07-31
@@ -349,7 +355,11 @@ controls:
         name: Cal. Civ. Code § 1798.100 (general duties; right to know)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.100
         normalization: text
-        note: Anchor for the consumer-rights cluster §§ 1798.100–.121.
+        asserts:
+          title: California Code, CIV 1798.100
+          version: Amended November 3, 2020, by initiative Proposition 24, Sec. 4.
+          issued: 2020-12-16
+        note: Anchor for the consumer-rights cluster §§ 1798.100–.121. Still in its CPRA (Proposition 24) form; the asserted issued date is the section's effective date, which the text distinguishes from its 2023-01-01 operative date.
         pinned:
           sha256: 81ae0994dcd750fad250147a50116b947e7dab710062bab2e7ba7104672d92cb
           retrieved: 2026-07-31
@@ -357,6 +367,10 @@ controls:
         name: Cal. Civ. Code § 1798.120 (right to opt out of sale/sharing)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.120
         normalization: text
+        asserts:
+          title: California Code, CIV 1798.120
+          version: Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)
+          issued: 2025-01-01
         pinned:
           sha256: c2944f38028af1d89b5dff55777fbc5c5dda1813d3fdc0fa6ee1162d26770aac
           retrieved: 2026-07-31
@@ -380,6 +394,10 @@ controls:
         name: Cal. Civ. Code § 1798.150 (private right of action for breaches)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.150
         normalization: text
+        asserts:
+          title: California Code, CIV 1798.150
+          version: Amended by Stats. 2024, Ch. 121, Sec. 6. (AB 3286)
+          issued: 2025-01-01
         note: Ties reasonable-security failures to breach liability; the security-review lens and the incident record are the SDLC touchpoints.
         pinned:
           sha256: c8decd72ba1dba30b04655b7dcd7d2836f2726233991c73b5213aac137d5029e
@@ -406,7 +424,11 @@ controls:
         name: Cal. Civ. Code § 1798.140(ag) (service provider definition and contract terms)
         url: https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140
         normalization: text
-        note: Same section as CTL-CCPA-001; the (ag) subdivision sets required service-provider contract terms.
+        asserts:
+          title: California Code, CIV 1798.140
+          version: Amended by Stats. 2025, Ch. 67, Sec. 27. (AB 1170)
+          issued: 2026-01-01
+        note: Same section as CTL-CCPA-001; the (ag) subdivision sets required service-provider contract terms. Subdivision letter re-verified against live text 2026-08-24 — AB 1170 amended this section effective 2026-01-01 without renumbering it; (ag)(1) still opens "Service provider means a person that processes personal information...". Subdivision drift under amendment is the #41 failure class, so this claim is checked rather than assumed (#43).
         pinned:
           sha256: 989c984ff5013028214e1c1e59bdf73d4cb7beb9191975c9082325021bbc37c6
           retrieved: 2026-07-31

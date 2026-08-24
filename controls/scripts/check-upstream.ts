@@ -193,6 +193,10 @@ export function staleManualFindings(reg: Registry, today: string): DriftFinding[
 export interface PinAssertions {
   title?: string;
   issued?: string;
+  // The document's own statement of which version it is. For California statutes this is the
+  // enactment line ("Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)") — version-specific by
+  // construction, so it cannot pass vacuously the way a generic title can (#43).
+  version?: string;
 }
 
 // US federal guidance states its date as "February 2, 2026"; accept that, the ISO form, and a
@@ -233,6 +237,12 @@ export function assertionFailures(asserts: PinAssertions, text: string): string[
   const failures: string[] = [];
   if (asserts.title && !hay.includes(loosen(asserts.title))) {
     failures.push(`the document text does not contain the asserted title "${asserts.title}"`);
+  }
+  if (asserts.version && !hay.includes(loosen(asserts.version))) {
+    failures.push(
+      `the document text does not contain the asserted version "${asserts.version}" — ` +
+        `the source may have been revised, or the pin may describe a different version than it covers`
+    );
   }
   if (asserts.issued) {
     const variants = issuedDateVariants(asserts.issued).map(loosen);

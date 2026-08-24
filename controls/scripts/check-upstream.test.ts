@@ -367,3 +367,66 @@ test("the corrected Feb 2026 assertion passes against the same text that fails t
     []
   );
 });
+
+// --- statute version assertions (#43) --------------------------------------
+//
+// A statute's enactment line is version-specific by construction, so it cannot pass vacuously the
+// way a generic title can. These guard the CCPA backfill.
+
+test("a matching version assertion passes", () => {
+  const text = "…the consumer’s personal information. (Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824) Effective January 1, 2025.)";
+  assert.deepEqual(
+    assertionFailures({ version: "Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)", issued: "2025-01-01" }, text),
+    []
+  );
+});
+
+test("a superseded enactment line is reported as a mismatch", () => {
+  // The section was amended; the registry still claims the prior chapter/bill.
+  const text = "(Amended by Stats. 2025, Ch. 67, Sec. 27. (AB 1170) Effective January 1, 2026.)";
+  const failures = assertionFailures({ version: "Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)" }, text);
+  assert.equal(failures.length, 1);
+  assert.match(failures[0], /does not contain the asserted version/);
+  assert.match(failures[0], /may have been revised/);
+});
+
+test("version assertions tolerate punctuation and whitespace churn like the others", () => {
+  assert.deepEqual(
+    assertionFailures({ version: "Amended by Stats. 2024, Ch. 121, Sec. 6. (AB 3286)" },
+      "amended  by stats 2024 ch 121 sec 6 ab 3286 effective january 1 2025"),
+    []
+  );
+});
+
+test("every CTL-CCPA-* document citation carries assertions (#43 backfill)", () => {
+  const ccpa = reg.controls.filter((c) => c.id.startsWith("CTL-CCPA-"));
+  assert.ok(ccpa.length >= 4);
+  for (const control of ccpa) {
+    for (const c of control.citations) {
+      if (c.adapter !== "document") continue;
+      assert.ok(c.asserts, `${control.id}: document citation ${c.url} has no asserts — untested description`);
+      const a = c.asserts as { title?: string };
+      assert.ok(a.title, `${control.id}: asserts must at minimum identify the document`);
+    }
+  }
+});
+
+test("the two citations sharing § 1798.140 assert the same version (no split-brain)", () => {
+  const shared = reg.controls
+    .flatMap((c) => c.citations)
+    .filter((c) => String(c.url ?? "").includes("sectionNum=1798.140"))
+    .map((c) => JSON.stringify(c.asserts));
+  assert.equal(shared.length, 2);
+  assert.equal(shared[0], shared[1], "CTL-CCPA-001 and CTL-CCPA-004 must not claim different versions of one section");
+});
+
+test("statute citations assert an enactment version, not just a title", () => {
+  // A title alone ("California Code, CIV 1798.120") survives any amendment — it would pass vacuously.
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (!String(c.url ?? "").includes("leginfo")) continue;
+      const a = c.asserts as { version?: string };
+      assert.ok(a?.version, `${control.id}: a statute pin needs its enactment line to be falsifiable`);
+    }
+  }
+});

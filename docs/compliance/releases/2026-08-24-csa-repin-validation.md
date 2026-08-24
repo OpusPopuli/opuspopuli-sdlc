@@ -105,6 +105,9 @@ Stated plainly, because a validation note that only reports successes is not evi
    human control with automated prompting, not an automated control.
 5. **Only `CTL-CSA-001` carries `asserts` today.** The `CTL-CCPA-*` document pins have verified
    checksums but still-untested descriptions. Backfill is a filed follow-up, not done here.
+   *(Resolved 2026-08-24 by [#43](https://github.com/OpusPopuli/opuspopuli-sdlc/issues/43) — see
+   [`2026-08-24-ccpa-asserts-validation.md`](2026-08-24-ccpa-asserts-validation.md). This limitation
+   is left in place as a record of the state at the time of this pack.)*
 6. **This change was not independently reviewed.** Author, director and approver are the same party;
    merge was approved by the repo owner on 2026-08-24. The `CTL-SOD-001` deviation is recorded in the
    change record rather than waived. Treat the `CTL-CSA-001` re-pin as director-approved, not
