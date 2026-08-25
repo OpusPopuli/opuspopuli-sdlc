@@ -128,9 +128,27 @@ export function affectedControls(reg: Registry, key: string): string[] {
 
 // --- comparison ------------------------------------------------------------
 
-// ISO dates sort lexically; live newer than pinned is drift.
+// Which way a pinned amendment date disagrees with the source. ISO dates sort lexically.
+//
+// `pin-ahead` is a direction the source cannot produce on its own: eCFR does not invent a later date
+// than the one it serves. It means the pin is wrong — hand-edited, a typo, or copied from a different
+// section — or the section was recodified underneath us. Either way a human must look, and the pin
+// must NOT be quietly advanced to match.
+export type EcfrDriftDirection = "none" | "source-newer" | "pin-ahead";
+
+export function ecfrDriftDirection(pinnedDate: string, liveDate: string): EcfrDriftDirection {
+  if (liveDate === pinnedDate) return "none";
+  return liveDate > pinnedDate ? "source-newer" : "pin-ahead";
+}
+
+// Any disagreement with the source is drift — matching documentDrifted/fedregDrifted, which have
+// always compared for inequality. This used to be `liveDate > pinnedDate`, so a pin AHEAD of the
+// source compared as clean forever (#51). That hole was found by working through a proposed "fix"
+// that would have set §11.10 to 2021-12-03 (the amendment date of §11.1, a section this registry does
+// not cite): live 2016-12-29 > pinned 2021-12-03 is false, so the watcher would have reported green
+// over a wrong pin indefinitely.
 export function ecfrDrifted(pinnedDate: string, liveDate: string): boolean {
-  return liveDate > pinnedDate;
+  return ecfrDriftDirection(pinnedDate, liveDate) !== "none";
 }
 
 export function documentDrifted(pinnedSha: string, liveSha: string): boolean {
@@ -334,18 +352,38 @@ export function driftIssueBody(f: DriftFinding): string {
   if (f.kind === "assertion") return assertionIssueBody(f);
   const kind =
     f.adapter === "ecfr" ? "amendment date" : f.adapter === "fedreg" ? "Federal Register document number" : "document checksum";
+  // A pin ahead of the source is a different problem from the source moving on, and needs the
+  // opposite instruction: do not re-pin to match, find out why the pin disagrees (#51).
+  const pinAhead = f.adapter === "ecfr" && ecfrDriftDirection(f.oldValue, f.newValue) === "pin-ahead";
+  const pinAheadNote = pinAhead
+    ? [
+        ``,
+        `> **The pin is AHEAD of the source.** eCFR does not serve a date earlier than one it previously`,
+        `> published, so this is not the regulation changing — the pin disagrees with the source in a`,
+        `> direction the source cannot produce. Likely causes: the date was hand-edited, mistyped, or`,
+        `> copied from a **different section** of the same part (sections have independent amendment`,
+        `> histories — e.g. 21 CFR §11.1 and §11.100 have later dates than §11.10 and §11.50).`,
+        `>`,
+        `> **Do not re-pin to match the source until you know why.** Confirm the citation names the`,
+        `> section you intend, then \`npm run pin -- <CTL-ID> --repin\`.`,
+      ]
+    : [];
   return [
-    `The pinned authoritative source for this control set has changed upstream.`,
+    pinAhead
+      ? `The pinned ${kind} for this control set DISAGREES with the authoritative source.`
+      : `The pinned authoritative source for this control set has changed upstream.`,
     ``,
     `- **Source:** ${f.label} (\`${f.key}\`)`,
     `- **Pinned ${kind}:** \`${f.oldValue}\``,
     `- **Live ${kind}:** \`${f.newValue}\``,
     `- **Affected controls:** ${f.controlIds.join(", ")}`,
     `- **Source link:** ${f.url}`,
+    ...pinAheadNote,
     ``,
     `This issue is intentionally unclassified so \`/op-issue-triage\` picks it up. Triage it, then`,
-    `re-pin via \`npm run pin -- <CTL-ID>\` as part of the lifecycle fix once the change is understood.`,
-    `The watcher does not re-pin automatically — a regulation change is reviewed, not silently absorbed.`,
+    `re-pin via \`npm run pin -- <CTL-ID> --repin\` as part of the lifecycle fix once the change is`,
+    `understood. The watcher does not re-pin automatically — a regulation change is reviewed, not`,
+    `silently absorbed.`,
   ].join("\n");
 }
 
