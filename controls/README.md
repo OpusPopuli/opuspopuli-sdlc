@@ -61,7 +61,7 @@ Each entry in `controls[]`:
 | `jurisdiction` | Legal regime — open vocabulary (`us`, `us-ca`, `eu`, `global`, …). |
 | `applicability` | Product/data contexts that trigger the control (`us-phi`, `eu-personal-data`, `samd`, `all`, …). Open vocabulary — packs add values without schema changes. |
 | `citations[]` | Authoritative sources via a named **adapter** (below). |
-| `implemented_by[]` | `skill` (must exist as `skills/<ref>/SKILL.md`), `hook` (`hooks/<ref>.md`), or `architecture` (posture documented in the compliance model). |
+| `implemented_by[]` | `skill` (must exist as `skills/<ref>/SKILL.md`), `hook` (`hooks/<ref>.md`), or `architecture` (posture documented in the compliance model). **The named skill/hook must also cite the control ID back** — `reconcile` checks both directions (#48). |
 | `evidence[]` | Artifact paths the control produces in consuming repos. |
 | `status` | `active`, or `pin-pending` while any pinnable citation lacks its pin. `validate.ts` enforces consistency. |
 

@@ -71,9 +71,51 @@ export function reconcile(reg: Registry, files: string[]): Finding[] {
   return findings;
 }
 
+// FORWARD check (#48): a skill or hook the registry names in `implemented_by` must cite the control
+// back. `reconcile()` above is the REVERSE check — it catches a skill citing a control that doesn't
+// exist. Nothing caught the opposite, so the only test of an implementation claim was that
+// `skills/<ref>/SKILL.md` EXISTS. The registry could name any skill for any control and stay green,
+// and all 19 claims were in exactly that state when this was written: claim recorded in one place,
+// artifact in another, nothing comparing them — the same shape as the mislabelled pin in #41, applied
+// to implementation rather than citation.
+//
+// `CTL-P11-001` is requirement-to-code traceability. Its own links have to be traceable.
+//
+// Separate from reconcile() because it is a whole-repo check: it needs the complete file set to
+// conclude a file is absent, whereas reconcile() is meaningful on any subset.
+// `root` exists so tests can lay out a synthetic repo in a temp dir. It is NOT a convenience: a
+// default-to-REPO_ROOT-only signature forced an early version of the tests to write fixture files
+// into the real skills/ tree, which clobbered two of them. Fixtures must never be able to reach the
+// working tree.
+export function reconcileImplementedBy(reg: Registry, files: string[], root: string = REPO_ROOT): Finding[] {
+  const findings: Finding[] = [];
+  const byFile = new Map(files.map((f) => [relative(root, f), readFileSync(f, "utf8")]));
+  for (const control of reg.controls) {
+    for (const impl of control.implemented_by ?? []) {
+      const rel =
+        impl.type === "skill" ? `skills/${impl.ref}/SKILL.md`
+        : impl.type === "hook" ? `hooks/${impl.ref}.md`
+        : null;
+      if (rel === null) continue; // `architecture` refs are prose posture, with no file to check
+      const text = byFile.get(rel);
+      if (text === undefined) {
+        findings.push({ file: rel, message: `${control.id} names this ${impl.type}, but the file does not exist` });
+      } else if (!text.includes(control.id)) {
+        findings.push({
+          file: rel,
+          message: `${control.id} claims this ${impl.type} implements it, but the file never cites ${control.id}`,
+        });
+      }
+    }
+  }
+  return findings;
+}
+
 const isMain = process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1];
 if (isMain) {
-  const findings = reconcile(loadRegistry(), referenceFiles());
+  const reg = loadRegistry();
+  const files = referenceFiles();
+  const findings = [...reconcile(reg, files), ...reconcileImplementedBy(reg, files)];
   for (const f of findings) console.error(`drift: ${f.file}: ${f.message}`);
   if (findings.length === 0) {
     console.log("registry ↔ skills/hooks/docs consistent");

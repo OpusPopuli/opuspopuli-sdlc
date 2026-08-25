@@ -94,3 +94,12 @@ categories. Not yet itemized.*
 Do not approve PR prep or release while any critical or high finding is unresolved.
 This scan is the evidence `/op-validate` cites for the data-handling controls of the active
 frameworks (e.g. the HIPAA data-handling control when `hipaa` is declared).
+
+---
+
+**Controls implemented:** `CTL-HIPAA-001` (PHI never appears in logs, prompts, or fixtures), `CTL-CCPA-001` (personal and sensitive personal information — definitions and handling).
+
+Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).

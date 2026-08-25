@@ -33,3 +33,12 @@ change control record it must be countersigned by a second person before it coun
 Output a structured review: **blockers | suggestions | nitpicks**.
 Blockers must be fixed before merge. Suggestions are recommended. Nitpicks are optional.
 Note the author/reviewer identities at the top so `/op-change-record` can capture the sign-off.
+
+---
+
+**Controls implemented:** `CTL-HIPAA-002` (runtime data residency — verifies changes don't send regulated data to a third-party runtime service), `CTL-HIPAA-003` (access to PHI restricted and reviewed at the API surface), `CTL-SOC2-001` (change management — independent review), `CTL-SOD-001` (separation of duties), `CTL-CCPA-002` (consumer rights preserved), `CTL-CCPA-003` (reasonable security).
+
+Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).
