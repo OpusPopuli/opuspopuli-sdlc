@@ -349,12 +349,82 @@ export function driftIssueBody(f: DriftFinding): string {
   ].join("\n");
 }
 
-export function watcherBrokenIssue(errors: WatcherError[]): IssueSpec {
+// --- unverified pins (#42) -------------------------------------------------
+//
+// A fetch failure is a statement about our EVIDENCE, not just about the network: the pins that source
+// backs revert to unverified. Issue #20 said only "this URL 404s" and never named CTL-CSA-001, so
+// whoever fixed it had no pointer to the pin underneath — which is how #21 restored the signal, closed
+// the issue, and left a mislabelled pin in place for eight more weeks.
+
+export interface UnverifiedPin {
+  controlId: string;
+  label: string;
+  pinnedValue: string;
+  lastVerified: string;
+}
+
+// Total by construction: a malformed or unpinned citation renders as "never pinned" rather than
+// throwing. The watcher must always be able to report its own failure.
+function describePin(c: Citation): { value: string; date: string } {
+  const p = (c.pinned ?? {}) as Record<string, string | undefined>;
+  if (p.sha256) return { value: p.sha256.slice(0, 12) + "…", date: p.retrieved ?? "unknown" };
+  if (p.amendment_date) return { value: p.amendment_date, date: p.checked ?? "unknown" };
+  if (p.latest_document_number) return { value: p.latest_document_number, date: p.checked ?? "unknown" };
+  return { value: "never pinned", date: "never" };
+}
+
+export function unverifiedPins(reg: Registry, errors: WatcherError[]): UnverifiedPin[] {
+  const keys = new Set(errors.map((e) => e.key));
+  const rows: UnverifiedPin[] = [];
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (!keys.has(sourceKeyFor(c))) continue;
+      const { value, date } = describePin(c);
+      rows.push({ controlId: control.id, label: sourceLabelFor(c), pinnedValue: value, lastVerified: date });
+    }
+  }
+  return rows.sort((a, b) => a.controlId.localeCompare(b.controlId) || a.label.localeCompare(b.label));
+}
+
+export function watcherBrokenIssue(errors: WatcherError[], reg?: Registry): IssueSpec {
+  const rows = reg ? unverifiedPins(reg, errors) : [];
   const body = [
     `The upstream drift watcher hit errors and could not verify one or more pinned sources.`,
-    `Pins may be stale without a drift issue being filed — investigate.`,
+    ``,
+    `## What failed`,
     ``,
     ...errors.map((e) => `- **${e.label}** (\`${e.key}\`): ${e.message}`),
+    ``,
+    `## Pins now UNVERIFIED`,
+    ``,
+    ...(rows.length > 0
+      ? [
+          `These controls depend on the sources above. Until someone re-verifies them, their pins are`,
+          `**unconfirmed** — not known-good, not known-stale.`,
+          ``,
+          `| Control | Citation | Pinned value | Last verified |`,
+          `|---|---|---|---|`,
+          ...rows.map((r) => `| \`${r.controlId}\` | ${r.label} | \`${r.pinnedValue}\` | ${r.lastVerified} |`),
+        ]
+      : [`_(no pinned citation could be mapped to these sources — check the registry by hand)_`]),
+    ``,
+    `## What does NOT resolve this`,
+    ``,
+    `**Restoring the fetch does not resolve this issue, and neither does silencing it.** Turning a`,
+    `source's poll off (\`auto_poll: false\`) or substituting a proxy signal changes what is watched; it`,
+    `does not tell you whether the pin above is correct.`,
+    ``,
+    `This is not hypothetical. #20 reported a 404 on the FDA CSA guidance and never named the affected`,
+    `control. #21 restored a signal, closed #20, and left \`CTL-CSA-001\` pinned to bytes it described`,
+    `incorrectly — for eight more weeks of green runs (#41).`,
+    ``,
+    `## What does`,
+    ``,
+    `1. \`npm run drift:dry-run -- --include-manual\` from a network that can reach the host — compares`,
+    `   checksums and verifies each pin's \`asserts\` against the document's own text.`,
+    `2. If the source is unchanged and its assertions hold, \`npm run pin -- <CTL-ID> --repin\` to refresh`,
+    `   the verification date. If it changed, triage the revision through the lifecycle first.`,
+    `3. Close only once every row above has been re-verified.`,
   ].join("\n");
   return { title: WATCHER_BROKEN_TITLE, body, labels: [DRIFT_LABEL] };
 }
@@ -363,7 +433,8 @@ export function watcherBrokenIssue(errors: WatcherError[]): IssueSpec {
 export function selectNewIssues(
   findings: DriftFinding[],
   errors: WatcherError[],
-  openTitles: Set<string>
+  openTitles: Set<string>,
+  reg?: Registry // supplied by main(); optional so existing callers/tests keep working
 ): IssueSpec[] {
   const specs: IssueSpec[] = [];
   for (const f of findings) {
@@ -373,7 +444,7 @@ export function selectNewIssues(
     }
   }
   if (errors.length > 0 && !openTitles.has(WATCHER_BROKEN_TITLE)) {
-    specs.push(watcherBrokenIssue(errors));
+    specs.push(watcherBrokenIssue(errors, reg));
   }
   return specs;
 }
@@ -606,7 +677,7 @@ async function main(): Promise<void> {
   }
 
   const openTitles = await openIssueTitles(repo, token);
-  const specs = selectNewIssues(findings, errors, openTitles);
+  const specs = selectNewIssues(findings, errors, openTitles, reg);
   if (specs.length === 0) {
     console.log("no new issues to file (no drift, or an issue is already open per source)");
     return;
