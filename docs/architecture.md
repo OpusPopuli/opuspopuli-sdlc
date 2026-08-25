@@ -118,8 +118,13 @@ runtime sandbox. The docs never claim otherwise.
 The control mapping is reconciled continuously, in two directions:
 
 - **Internal drift** — `internal-drift.yml` runs `npm run check` on every PR: schema validity,
-  control→skill/hook existence, skill→control-ID existence, generated-doc match, profile validity,
-  and the unit tests. The repo cannot disagree with itself and stay green.
+  control→skill/hook existence **and back-citation** (a skill the registry names must cite the control
+  ID — checked in both directions since #48, when all 19 implementation claims turned out to be
+  unverifiable from the artifacts they named), skill→control-ID existence, generated-doc match,
+  profile validity, and the unit tests. The repo cannot disagree with itself and stay green.
+
+  The forward check proves a skill *cites* its control. It cannot prove the skill *implements* it —
+  that remains human review of the footer against the body.
 - **Upstream drift** — `upstream-drift.yml` runs `npm run drift:check` weekly: it compares the live
   sources to the pins and files a triage-ready issue per changed source (labelled `upstream-drift`,
   otherwise unlabelled so `/op-issue-triage` classifies it). It never re-pins automatically — a

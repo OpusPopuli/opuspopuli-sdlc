@@ -49,3 +49,12 @@ npm run check   # validate registry + docs match generator + registry↔skills/h
 before pushing, to catch registry/doc drift locally. The same command is the entire job of the
 `internal-drift` GitHub Actions workflow (`.github/workflows/internal-drift.yml`), which gates every
 PR. See [`controls/README.md`](../controls/README.md) for the individual checks.
+
+---
+
+**Controls implemented:** `CTL-HIPAA-001` (PHI gate runs on every push), `CTL-SOC2-001` (change management — the enforced gate).
+
+Declared in [`controls/registry.yaml`](../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).

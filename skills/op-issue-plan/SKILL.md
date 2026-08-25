@@ -34,3 +34,12 @@ Present the plan for my approval before touching any files.
 - Include a header block: issue number/link, date, author, data classification, and the risk register
 - This file is the traceability anchor that `/op-trace`, `/op-change-record`, and `/op-validate` link back to
 - Stage it in the same commit series as the implementation so the plan-of-record travels with the code
+
+---
+
+**Controls implemented:** `CTL-SOC2-001` (change management — the plan of record), `CTL-ISO-001` (risk management per change — the risk register in every plan), `CTL-CCPA-002` (consumer rights — data-handling planning for changes touching personal information).
+
+Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).

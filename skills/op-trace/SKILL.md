@@ -26,3 +26,12 @@ Output a matrix table (one row per acceptance criterion) with columns:
 - Call out every gap explicitly at the end — an RTM with silent gaps is worse than none.
 
 Persist to `docs/compliance/traceability/<issue>-rtm.md` and show me before writing.
+
+---
+
+**Controls implemented:** `CTL-P11-001` (requirement-to-code-to-test-to-release traceability).
+
+Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).

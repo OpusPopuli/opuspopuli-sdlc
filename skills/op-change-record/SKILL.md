@@ -24,3 +24,12 @@ Fill every field from real evidence (git, GitHub MCP, the persisted plan) — ma
 Approvals are electronic signatures: capture who, when, and what they attested — never fabricate one.
 Present the record for my approval, then persist to `docs/compliance/changes/<issue>-change-record.md`.
 `/op-validate` collects these into the release evidence pack.
+
+---
+
+**Controls implemented:** `CTL-SOC2-001` (change management — plan, independent review, enforced gate, recorded change), `CTL-SOD-001` (separation of duties — self-review flagged, countersignature required), `CTL-P11-002` (electronic signatures — approvals as signed who/when/meaning records).
+
+Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).
