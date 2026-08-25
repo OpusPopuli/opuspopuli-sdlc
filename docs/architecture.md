@@ -124,7 +124,9 @@ The control mapping is reconciled continuously, in two directions:
   sources to the pins and files a triage-ready issue per changed source (labelled `upstream-drift`,
   otherwise unlabelled so `/op-issue-triage` classifies it). It never re-pins automatically — a
   regulation change is reviewed through the lifecycle, not silently absorbed. On a fetch/API error
-  it files one "watcher broken" issue rather than passing green.
+  it files one "watcher broken" issue rather than passing green — naming every control whose pin the
+  failure left **unverified**, and stating that restoring the fetch does not clear it (#42). Closing
+  requires re-verification, not a restored signal.
 
   It reports three kinds of finding: a **value change** (the source moved), a **stale pin** (a source
   it cannot poll has aged past `reverify_days` — nobody has looked), and an **assertion mismatch**

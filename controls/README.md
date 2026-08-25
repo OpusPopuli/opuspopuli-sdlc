@@ -195,7 +195,13 @@ deduped by title, labelled `upstream-drift` and otherwise unlabelled so `/op-iss
 up) naming the old/new value and the affected control IDs. It **never re-pins automatically** — a
 regulation change is reviewed through the SDLC's own lifecycle (triage → plan → fix, where re-pinning
 via `npm run pin` is part of the fix), not silently absorbed. On a fetch/API error it files a single
-"watcher broken" issue rather than passing green. Copyrighted frameworks (`clause` adapter) are not
+"watcher broken" issue rather than passing green — and that issue **names every control whose pin the
+failure left unverified**, with its pinned value and last-verified date, because a fetch failure is a
+statement about our evidence and not just about the network. It says explicitly that restoring the
+fetch does not resolve it, and that silencing the poll resolves it even less: closing requires
+re-verification via `--include-manual` and, if the source moved, a `--repin`. (#20 named no control at
+all, which is how #21 restored a signal, closed the issue, and left a mislabelled pin in place — #42.)
+Copyrighted frameworks (`clause` adapter) are not
 polled — their text is not fetchable, so new-edition checks stay manual. This is the automated,
 CSA-native replacement for a manual periodic-review ceremony.
 

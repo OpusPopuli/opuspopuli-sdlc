@@ -6,6 +6,8 @@ import {
   pinOverdue,
   staleManualFindings,
   assertionFailures,
+  unverifiedPins,
+  watcherBrokenIssue,
   supersededIssueDates,
   issuedDateVariants,
   assertedDocuments,
@@ -429,4 +431,67 @@ test("statute citations assert an enactment version, not just a title", () => {
       assert.ok(a?.version, `${control.id}: a statute pin needs its enactment line to be falsifiable`);
     }
   }
+});
+
+// --- watcher-broken issues name the pins they leave unverified (#42) -------
+//
+// The causal defect behind #20 -> #21: the watcher reported "this URL 404s" and never named
+// CTL-CSA-001, so whoever fixed the fetch had no pointer to the pin underneath.
+
+const FDA_KEY = "document:https://www.fda.gov/media/188844/download";
+
+test("unverifiedPins maps an errored source to the controls that depend on it", () => {
+  const rows = unverifiedPins(reg, [{ key: FDA_KEY, label: "FDA guidance", message: "HTTP 404" }]);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].controlId, "CTL-CSA-001");
+  assert.match(rows[0].pinnedValue, /^11e2e21f/);
+  assert.equal(rows[0].lastVerified, "2026-08-24");
+});
+
+test("an errored source shared by several controls lists every one of them", () => {
+  const key = "document:https://leginfo.legislature.ca.gov/faces/codes_displaySection.xhtml?lawCode=CIV&sectionNum=1798.140";
+  const ids = unverifiedPins(reg, [{ key, label: "§ 1798.140", message: "HTTP 503" }]).map((r) => r.controlId);
+  assert.deepEqual(ids, ["CTL-CCPA-001", "CTL-CCPA-004"]);
+});
+
+test("regression for #20: a 404 on the FDA source names CTL-CSA-001 in the issue body", () => {
+  // The exact scenario that produced #20. Its real body never mentioned the control.
+  const spec = watcherBrokenIssue([{ key: FDA_KEY, label: "FDA guidance", message: "HTTP 404" }], reg);
+  assert.match(spec.body, /CTL-CSA-001/);
+  assert.match(spec.body, /HTTP 404/);
+  assert.match(spec.body, /Pins now UNVERIFIED/);
+});
+
+test("the issue states that restoring the fetch does not resolve it", () => {
+  const spec = watcherBrokenIssue([{ key: FDA_KEY, label: "FDA guidance", message: "HTTP 404" }], reg);
+  assert.match(spec.body, /Restoring the fetch does not resolve this issue/);
+  assert.match(spec.body, /auto_poll: false/); // silencing the poll is called out as a non-fix
+  assert.match(spec.body, /--include-manual/);
+  assert.match(spec.body, /--repin/);
+});
+
+test("rendering is total: an unmappable or unpinned source degrades, never throws", () => {
+  // The watcher must always be able to report its own failure.
+  const spec = watcherBrokenIssue([{ key: "document:https://nowhere.example/x", label: "?", message: "boom" }], reg);
+  assert.match(spec.body, /no pinned citation could be mapped/);
+  const unpinned = {
+    ...reg,
+    controls: [{ ...reg.controls[0], citations: [{ adapter: "document", url: "https://nowhere.example/x" } as never] }],
+  } as Registry;
+  const rows = unverifiedPins(unpinned, [{ key: "document:https://nowhere.example/x", label: "?", message: "boom" }]);
+  assert.equal(rows[0].pinnedValue, "never pinned");
+  assert.equal(rows[0].lastVerified, "never");
+});
+
+test("watcherBrokenIssue without a registry still renders (back-compat)", () => {
+  const spec = watcherBrokenIssue([{ key: "k", label: "src", message: "HTTP 500" }]);
+  assert.match(spec.title, /watcher: check failed/);
+  assert.match(spec.body, /HTTP 500/);
+  assert.deepEqual(spec.labels, [DRIFT_LABEL]);
+});
+
+test("selectNewIssues threads the registry into the watcher-broken body", () => {
+  const specs = selectNewIssues([], [{ key: FDA_KEY, label: "FDA guidance", message: "HTTP 404" }], new Set(), reg);
+  assert.equal(specs.length, 1);
+  assert.match(specs[0].body, /CTL-CSA-001/);
 });
