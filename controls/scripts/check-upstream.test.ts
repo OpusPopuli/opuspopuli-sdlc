@@ -6,6 +6,7 @@ import {
   pinOverdue,
   staleManualFindings,
   assertionFailures,
+  ecfrDriftDirection,
   unverifiedPins,
   watcherBrokenIssue,
   supersededIssueDates,
@@ -70,10 +71,12 @@ test("a source shared by multiple controls is polled once but maps to all of the
   assert.equal(pinnableSources(reg).filter((s) => s.key === key).length, 1);
 });
 
-test("ecfr drift is a strictly newer amendment date", () => {
-  assert.equal(ecfrDrifted("2016-12-30", "2024-06-25"), true);
-  assert.equal(ecfrDrifted("2016-12-30", "2016-12-30"), false);
-  assert.equal(ecfrDrifted("2024-06-25", "2016-12-30"), false); // never goes backwards
+test("ecfr drift is ANY disagreement with the source, in either direction (#51)", () => {
+  assert.equal(ecfrDrifted("2016-12-30", "2024-06-25"), true); // source moved on
+  assert.equal(ecfrDrifted("2016-12-30", "2016-12-30"), false); // agrees
+  // Previously false ("never goes backwards"). A pin AHEAD of the source is a direction eCFR cannot
+  // produce, so it means the pin is wrong — and it compared clean forever.
+  assert.equal(ecfrDrifted("2024-06-25", "2016-12-30"), true);
 });
 
 test("document drift is any checksum change", () => {
@@ -494,4 +497,65 @@ test("selectNewIssues threads the registry into the watcher-broken body", () => 
   const specs = selectNewIssues([], [{ key: FDA_KEY, label: "FDA guidance", message: "HTTP 404" }], new Set(), reg);
   assert.equal(specs.length, 1);
   assert.match(specs[0].body, /CTL-CSA-001/);
+});
+
+// --- drift direction (#51) -------------------------------------------------
+
+test("ecfrDriftDirection names which way the pin and the source disagree", () => {
+  assert.equal(ecfrDriftDirection("2016-12-29", "2016-12-29"), "none");
+  assert.equal(ecfrDriftDirection("2016-12-29", "2023-03-02"), "source-newer");
+  assert.equal(ecfrDriftDirection("2023-03-02", "2016-12-29"), "pin-ahead");
+});
+
+test("regression for #51: the near-miss that would have passed green", () => {
+  // A report proposed setting §11.10 (pinned 2016-12-29, correct) to 2021-12-03 — which is in fact
+  // the amendment date of §11.1, a section this registry does not cite. Under the old comparator
+  // (live > pinned) that wrong pin compared clean forever: 2016-12-29 > 2021-12-03 is false.
+  assert.equal(ecfrDrifted("2021-12-03", "2016-12-29"), true);
+  assert.equal(ecfrDriftDirection("2021-12-03", "2016-12-29"), "pin-ahead");
+});
+
+test("a pin-ahead issue says DISAGREES and tells you not to re-pin to match", () => {
+  const f: DriftFinding = {
+    key: "ecfr:title-21-part-11-11.10", label: "21 CFR 11.10", adapter: "ecfr",
+    oldValue: "2021-12-03", newValue: "2016-12-29", controlIds: ["CTL-P11-001"], url: "https://example",
+  };
+  const body = driftIssueBody(f);
+  assert.match(body, /DISAGREES with the authoritative source/);
+  assert.match(body, /pin is AHEAD of the source/);
+  assert.match(body, /Do not re-pin to match the source until you know why/);
+  assert.match(body, /different section/); // names the actual cause
+});
+
+test("an ordinary source-newer issue keeps the original framing, with no pin-ahead warning", () => {
+  const f: DriftFinding = {
+    key: "ecfr:title-21-part-11-11.10", label: "21 CFR 11.10", adapter: "ecfr",
+    oldValue: "2016-12-29", newValue: "2027-01-01", controlIds: ["CTL-P11-001"], url: "https://example",
+  };
+  const body = driftIssueBody(f);
+  assert.match(body, /has changed upstream/);
+  assert.doesNotMatch(body, /pin is AHEAD/);
+  assert.match(body, /does not re-pin automatically/);
+});
+
+test("only ecfr gets the direction treatment — document and fedreg already compared both ways", () => {
+  const f: DriftFinding = {
+    key: "document:https://x", label: "a doc", adapter: "document",
+    oldValue: "zzz", newValue: "aaa", controlIds: ["CTL-CCPA-001"], url: "https://x",
+  };
+  assert.doesNotMatch(driftIssueBody(f), /pin is AHEAD/);
+});
+
+test("the committed Part 11 pins agree with eCFR per section (guards the wrong 'fix')", () => {
+  // §11.10 and §11.50 each have exactly one eCFR content version, 2016-12-29. §11.1 (2022-02-01) and
+  // §11.100 (2023-03-02) have later dates but are NOT cited here. Blanket-replacing would be wrong.
+  const pinned = new Set<string>();
+  for (const control of reg.controls) {
+    for (const c of control.citations) {
+      if (c.adapter === "ecfr" && String(c.cfr_part) === "11") {
+        pinned.add(`${c.cfr_section}=${(c.pinned as { amendment_date: string }).amendment_date}`);
+      }
+    }
+  }
+  assert.deepEqual([...pinned].sort(), ["11.10=2016-12-29", "11.50=2016-12-29"]);
 });

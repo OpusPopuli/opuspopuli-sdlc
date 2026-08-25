@@ -119,7 +119,7 @@ redesign.
 
 | Adapter | Sources | Pin | Drift watch (#4) |
 |---|---|---|---|
-| `ecfr` | US federal regulations (public domain) | latest `amendment_date` for the part/section via the [eCFR Versioner API](https://www.ecfr.gov/developers/documentation/api/v1) | poll for newer amendment dates |
+| `ecfr` | US federal regulations (public domain) | latest `amendment_date` for the part/section via the [eCFR Versioner API](https://www.ecfr.gov/developers/documentation/api/v1) | poll for **any** disagreement with the pinned date (#51) |
 | `eurlex` | EU law by CELEX/ELI (freely reusable) — reserved for packs #7/#9 | consolidation date | poll for newer consolidated versions |
 | `document` | Public guidance docs / statute pages | `sha256` + retrieval date; `normalization: raw` (bytes, PDFs) or `text` (markup-stripped, HTML — template churn doesn't fire false alarms) | re-fetch and compare checksum; plus `asserts` / `reverify_days` (below) |
 | `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO/IEC standards) | none — identifier only | none (manual new-edition checks) |
@@ -189,6 +189,14 @@ eCFR latest amendment dates and FDA/CPPA document checksums, via the same primit
 npm run drift:dry-run   # fetch live, print drift, file nothing (safe to run anywhere with egress)
 npm run drift:check     # the CI entry point — files issues (needs GITHUB_TOKEN + GITHUB_REPOSITORY)
 ```
+
+**Amendment dates are per *section*, not per part.** Sections of one part have independent histories:
+21 CFR §11.1 (`2022-02-01`) and §11.100 (`2023-03-02`) carry later dates than §11.10 and §11.50
+(`2016-12-29`), and the part-level authority line lists FR actions for all of them together. Pin the
+date the Versioner API returns *for the cited section*; never copy a date from a part-level authority
+line or from a neighbouring section. A pin **ahead** of the source is drift too — eCFR cannot serve an
+earlier date than one it published, so that direction means the pin is wrong, and the issue says so
+rather than telling you to re-pin to match (#51).
 
 When a source has changed, the watcher **files a triage-ready GitHub issue** (one per source,
 deduped by title, labelled `upstream-drift` and otherwise unlabelled so `/op-issue-triage` picks it
