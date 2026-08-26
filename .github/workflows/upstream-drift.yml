@@ -6,10 +6,27 @@ name: upstream-drift
 # absorbed. Copyrighted frameworks (GAMP 5, SOC 2 TSC, ISO) are out of scope: their text is not
 # fetchable, so new-edition checks stay manual.
 
+# Cadence is declared per source in registry.yaml (#53) and each tier gets its own cron. Sources move
+# at very different rates: 21 CFR part 820 changed three times since 2024 (QMSR transition); §11.10
+# and §11.50 have not changed since 2016. Polling everything weekly spent ~570 requests a year to
+# catch 1-2 real events.
+#
+# Times are off-the-hour to be a polite API client. Keep the cron -> tier map below in sync with the
+# `cadence` enum in controls/schema/registry.schema.json; a cron with no mapping polls ALL tiers,
+# which is safe (over-polling) rather than silent (under-polling).
+
 on:
   schedule:
-    - cron: "17 6 * * 1" # weekly, Mondays 06:17 UTC (off-the-hour to be a polite API client)
+    - cron: "17 6 * * 1" # weekly tier    — Mondays 06:17 UTC
+    - cron: "23 6 1 * *" # monthly tier   — 1st of the month 06:23 UTC
+    - cron: "29 6 1 1,4,7,10 *" # quarterly tier — 1 Jan/Apr/Jul/Oct 06:29 UTC
   workflow_dispatch:
+    inputs:
+      cadence:
+        description: "Which tier to poll (all = every source, the default for manual runs)"
+        type: choice
+        options: [all, weekly, monthly, quarterly]
+        default: all
 
 concurrency:
   group: upstream-drift
@@ -29,7 +46,27 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # Map the firing cron to its cadence tier. A manual run uses the chosen input (default `all`).
+      # An unmapped cron falls through to `all`: over-polling is a wasted request, under-polling is a
+      # missed regulation change, so the failure mode is deliberately biased toward the former.
+      - name: Resolve cadence tier
+        id: tier
+        env:
+          FIRED: ${{ github.event.schedule }}
+          CHOSEN: ${{ inputs.cadence }}
+        run: |
+          set -euo pipefail
+          case "${FIRED:-}" in
+            "17 6 * * 1")          TIER=weekly ;;
+            "23 6 1 * *")          TIER=monthly ;;
+            "29 6 1 1,4,7,10 *")   TIER=quarterly ;;
+            "")                    TIER="${CHOSEN:-all}" ;;   # workflow_dispatch
+            *)                     TIER=all ; echo "::warning::unmapped cron '${FIRED}' — polling all tiers" ;;
+          esac
+          echo "tier=$TIER" >> "$GITHUB_OUTPUT"
+          echo "polling cadence tier: $TIER"
+
       - name: Check authoritative sources for drift and file issues
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: npm run drift:check
+        run: npm run drift:check -- --cadence=${{ steps.tier.outputs.tier }}

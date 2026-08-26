@@ -1,11 +1,20 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { loadRegistry, type Registry } from "./registry.ts";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { loadRegistry, CONTROLS_DIR, type Registry } from "./registry.ts";
 import {
   daysBetween,
   pinOverdue,
   staleManualFindings,
   assertionFailures,
+  CADENCES,
+  DEFAULT_CADENCE,
+  cadenceOf,
+  defaultCadenceOf,
+  sourcesForCadence,
+  skippedForCadence,
+  cadenceArg,
   ecfrDriftDirection,
   unverifiedPins,
   watcherBrokenIssue,
@@ -558,4 +567,89 @@ test("the committed Part 11 pins agree with eCFR per section (guards the wrong '
     }
   }
   assert.deepEqual([...pinned].sort(), ["11.10=2016-12-29", "11.50=2016-12-29"]);
+});
+
+// --- cadence (#53) ---------------------------------------------------------
+
+test("a citation inherits drift.default_cadence when it declares none", () => {
+  const bare = { ...reg, drift: { default_cadence: "quarterly" } } as never as typeof reg;
+  assert.equal(cadenceOf({ adapter: "ecfr" } as never, bare), "quarterly");
+  assert.equal(cadenceOf({ adapter: "ecfr", cadence: "weekly" } as never, bare), "weekly");
+});
+
+test("an absent or invalid drift block falls back to the built-in default", () => {
+  const none = { ...reg, drift: undefined } as never as typeof reg;
+  assert.equal(defaultCadenceOf(none), DEFAULT_CADENCE);
+  const junk = { ...reg, drift: { default_cadence: "hourly" } } as never as typeof reg;
+  assert.equal(defaultCadenceOf(junk), DEFAULT_CADENCE);
+});
+
+test("the tiers partition every polled source exactly once", () => {
+  const all = pinnableSources(reg).map((s) => s.key).sort();
+  const tiered = CADENCES.flatMap((c) => sourcesForCadence(reg, c).map((s) => s.key)).sort();
+  assert.deepEqual(tiered, all, "a source must belong to exactly one tier — no gaps, no double-polling");
+});
+
+test("no cadence argument polls everything (a human never gets a partial answer unasked)", () => {
+  assert.equal(sourcesForCadence(reg, undefined).length, pinnableSources(reg).length);
+  assert.deepEqual(skippedForCadence(reg, undefined), []);
+});
+
+test("a scoped run reports what it did not look at, and on which tier", () => {
+  const polled = sourcesForCadence(reg, "weekly");
+  const skipped = skippedForCadence(reg, "weekly");
+  assert.ok(polled.length > 0 && skipped.length > 0);
+  assert.equal(polled.length + skipped.length, pinnableSources(reg).length);
+  assert.ok(skipped.every((s) => s.cadence !== "weekly"));
+});
+
+test("cadenceArg parses tiers, treats 'all' as unscoped, and rejects junk", () => {
+  assert.equal(cadenceArg(["--cadence=weekly"]), "weekly");
+  assert.equal(cadenceArg(["--cadence=all"]), undefined);
+  assert.equal(cadenceArg([]), undefined);
+  assert.throws(() => cadenceArg(["--cadence=hourly"]), /--cadence must be one of/);
+});
+
+test("collect honours the cadence scope (injected fetchers)", async () => {
+  const fetchers: Fetchers = {
+    ecfr: async () => "2099-01-01",
+    document: async () => "deadbeef",
+    fedreg: async () => "2099-00001",
+  };
+  const scoped = await collect(reg, fetchers, "weekly");
+  const full = await collect(reg, fetchers);
+  assert.ok(scoped.findings.length > 0);
+  assert.ok(scoped.findings.length < full.findings.length, "a scoped run must poll fewer sources");
+});
+
+test("21 CFR part 820 is on the fastest tier — it is the one source actually moving", () => {
+  const weekly = sourcesForCadence(reg, "weekly").map((s) => s.key);
+  assert.ok(weekly.includes("ecfr:title-21-part-820"));
+});
+
+test("every cadence tier has a cron, and every cron maps to a tier in the workflow", () => {
+  // The cron -> tier `case` map in the workflow is hand-maintained. This is the check that stops it
+  // drifting from CADENCES: add a tier without a cron and it is never polled, silently.
+  const wf = readFileSync(join(CONTROLS_DIR, "..", ".github/workflows/upstream-drift.yml"), "utf8");
+  const crons = [...wf.matchAll(/- cron: "([^"]+)"/g)].map((m) => m[1]);
+  const mapped = [...wf.matchAll(/"([^"]+)"\)\s+TIER=(\w+)/g)].map((m) => ({ cron: m[1], tier: m[2] }));
+
+  assert.equal(crons.length, CADENCES.length, "one cron per cadence tier");
+  for (const tier of CADENCES) {
+    assert.ok(mapped.some((m) => m.tier === tier), `tier "${tier}" has no cron mapped to it`);
+  }
+  for (const cron of crons) {
+    assert.ok(mapped.some((m) => m.cron === cron), `cron "${cron}" is not mapped to a tier`);
+  }
+  // Unmapped crons must fall through to `all` — over-poll rather than silently under-poll.
+  assert.match(wf, /TIER=all\s*;\s*echo "::warning::unmapped cron/);
+});
+
+test("every declared cadence justifies itself against observed velocity", () => {
+  // A tier with no stated reason is a number someone guessed. The registry comment must say why.
+  const yaml = readFileSync(join(CONTROLS_DIR, "registry.yaml"), "utf8");
+  for (const line of yaml.split("\n")) {
+    if (!/^\s+cadence: /.test(line)) continue;
+    assert.match(line, /#/, `cadence declared with no justification: ${line.trim()}`);
+  }
 });

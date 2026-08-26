@@ -4,13 +4,23 @@
   "title": "OpusPopuli SDLC control registry",
   "type": "object",
   "additionalProperties": false,
-  "required": ["version", "preamble", "profiles", "frameworks", "controls"],
+  "required": [
+    "version",
+    "preamble",
+    "profiles",
+    "frameworks",
+    "controls"
+  ],
   "properties": {
-    "version": { "const": 1 },
+    "version": {
+      "const": 1
+    },
     "preamble": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["intended_use"],
+      "required": [
+        "intended_use"
+      ],
       "properties": {
         "intended_use": {
           "type": "string",
@@ -22,11 +32,16 @@
       "type": "object",
       "description": "Display metadata for framework families, keyed by family slug. Single source for the generated compliance-model table (#2); validate.ts enforces that every family a control uses has an entry here, and that no entry is an orphan.",
       "minProperties": 1,
-      "propertyNames": { "pattern": "^[a-z0-9][a-z0-9-]*$" },
+      "propertyNames": {
+        "pattern": "^[a-z0-9][a-z0-9-]*$"
+      },
       "additionalProperties": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["label", "sort"],
+        "required": [
+          "label",
+          "sort"
+        ],
         "properties": {
           "label": {
             "type": "string",
@@ -41,7 +56,10 @@
             "type": "array",
             "description": "Regulated-data categories this family brings into scope for op-data-scan (#10). A consuming profile's declared families union their data_classes to determine what the scan looks for. Open vocabulary; packs extend it (e.g. ca-personal-information, eu-personal-data).",
             "uniqueItems": true,
-            "items": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" }
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*$"
+            }
           }
         }
       }
@@ -49,13 +67,17 @@
     "profiles": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["families"],
+      "required": [
+        "families"
+      ],
       "properties": {
         "families": {
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "$ref": "#/definitions/slug" },
+          "items": {
+            "$ref": "#/definitions/slug"
+          },
           "description": "Framework families a consuming repo may declare in its profile. A control whose family is absent from a repo's profile is inert for that repo."
         }
       }
@@ -63,7 +85,25 @@
     "controls": {
       "type": "array",
       "minItems": 1,
-      "items": { "$ref": "#/definitions/control" }
+      "items": {
+        "$ref": "#/definitions/control"
+      }
+    },
+    "drift": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Upstream drift-watch scheduling (#53). Cadence is declared, not uniform: sources move at very different rates (21 CFR part 11 unchanged since 2016; part 820 amended three times in two years). Lowering cadence is an EFFICIENCY choice \u2014 it widens the worst-case detection window to the declared tier \u2014 not a robustness improvement.",
+      "properties": {
+        "default_cadence": {
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly"
+          ],
+          "default": "monthly",
+          "description": "Tier applied to any polled citation that does not declare its own cadence."
+        }
+      }
     }
   },
   "definitions": {
@@ -99,8 +139,13 @@
           "pattern": "^CTL-[A-Z0-9]+-\\d{3}$",
           "description": "Stable control identifier, e.g. CTL-HIPAA-001. Never reused."
         },
-        "title": { "type": "string", "minLength": 1 },
-        "description": { "type": "string" },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "description": {
+          "type": "string"
+        },
         "family": {
           "$ref": "#/definitions/slug",
           "description": "Must be one of profiles.families (enforced semantically by validate.ts)."
@@ -113,59 +158,114 @@
           "type": "array",
           "minItems": 1,
           "uniqueItems": true,
-          "items": { "$ref": "#/definitions/slug" },
+          "items": {
+            "$ref": "#/definitions/slug"
+          },
           "description": "Product/data contexts that trigger the control, open vocabulary: us-phi, us-regulated-records, eu-personal-data, eu-samd, all, ..."
         },
         "citations": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/definitions/citation" }
+          "items": {
+            "$ref": "#/definitions/citation"
+          }
         },
         "implemented_by": {
           "type": "array",
           "minItems": 1,
-          "items": { "$ref": "#/definitions/implementation" }
+          "items": {
+            "$ref": "#/definitions/implementation"
+          }
         },
         "evidence": {
           "type": "array",
-          "items": { "type": "string" },
+          "items": {
+            "type": "string"
+          },
           "description": "Evidence artifact paths (glob-ish) produced in consuming repos."
         },
         "status": {
           "type": "string",
-          "enum": ["active", "pin-pending"],
+          "enum": [
+            "active",
+            "pin-pending"
+          ],
           "description": "pin-pending = at least one pinnable citation has no pin yet (enforced semantically by validate.ts)."
         }
       }
     },
     "citation": {
       "oneOf": [
-        { "$ref": "#/definitions/citationEcfr" },
-        { "$ref": "#/definitions/citationEurlex" },
-        { "$ref": "#/definitions/citationDocument" },
-        { "$ref": "#/definitions/citationFedreg" },
-        { "$ref": "#/definitions/citationClause" }
+        {
+          "$ref": "#/definitions/citationEcfr"
+        },
+        {
+          "$ref": "#/definitions/citationEurlex"
+        },
+        {
+          "$ref": "#/definitions/citationDocument"
+        },
+        {
+          "$ref": "#/definitions/citationFedreg"
+        },
+        {
+          "$ref": "#/definitions/citationClause"
+        }
       ]
     },
     "citationFedreg": {
       "type": "object",
       "description": "A Federal Register docket, polled via the free federalregister.gov API (no key, CI-reachable). Used as the drift signal for guidance documents whose own host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). A new document on the docket = a revision to watch.",
       "additionalProperties": false,
-      "required": ["adapter", "docket"],
+      "required": [
+        "adapter",
+        "docket"
+      ],
       "properties": {
-        "adapter": { "const": "fedreg" },
-        "docket": { "type": "string", "pattern": "^[A-Z0-9-]+$", "description": "Federal Register docket id, e.g. FDA-2022-D-0795." },
-        "name": { "type": "string" },
-        "note": { "type": "string" },
+        "adapter": {
+          "const": "fedreg"
+        },
+        "docket": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-]+$",
+          "description": "Federal Register docket id, e.g. FDA-2022-D-0795."
+        },
+        "name": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
         "pinned": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["latest_document_number", "latest_publication_date", "checked"],
+          "required": [
+            "latest_document_number",
+            "latest_publication_date",
+            "checked"
+          ],
           "properties": {
-            "latest_document_number": { "type": "string", "description": "Newest document number on the docket at pin time, e.g. 2025-18468." },
-            "latest_publication_date": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-            "checked": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$" }
+            "latest_document_number": {
+              "type": "string",
+              "description": "Newest document number on the docket at pin time, e.g. 2025-18468."
+            },
+            "latest_publication_date": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "checked": {
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            }
           }
+        },
+        "cadence": {
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly"
+          ],
+          "description": "How often the drift watch polls this source. Omit to inherit drift.default_cadence. Choose against the source's observed change history and justify it in `note`."
         }
       }
     },
@@ -173,21 +273,39 @@
       "type": "object",
       "description": "US federal regulation via the eCFR Versioner API (public domain; pinnable and drift-watchable).",
       "additionalProperties": false,
-      "required": ["adapter", "cfr_title", "cfr_part"],
+      "required": [
+        "adapter",
+        "cfr_title",
+        "cfr_part"
+      ],
       "properties": {
-        "adapter": { "const": "ecfr" },
-        "cfr_title": { "type": "integer", "minimum": 1, "maximum": 50 },
-        "cfr_part": { "type": "string", "pattern": "^[0-9]+[A-Za-z]?$" },
+        "adapter": {
+          "const": "ecfr"
+        },
+        "cfr_title": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        },
+        "cfr_part": {
+          "type": "string",
+          "pattern": "^[0-9]+[A-Za-z]?$"
+        },
         "cfr_section": {
           "type": "string",
           "pattern": "^[0-9]+[A-Za-z]?\\.[0-9]+$",
           "description": "Optional section granularity, e.g. 164.312."
         },
-        "note": { "type": "string" },
+        "note": {
+          "type": "string"
+        },
         "pinned": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["amendment_date", "checked"],
+          "required": [
+            "amendment_date",
+            "checked"
+          ],
           "properties": {
             "amendment_date": {
               "$ref": "#/definitions/isoDate",
@@ -198,26 +316,53 @@
               "description": "Date the pin was last verified against the API."
             }
           }
+        },
+        "cadence": {
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly"
+          ],
+          "description": "How often the drift watch polls this source. Omit to inherit drift.default_cadence. Choose against the source's observed change history and justify it in `note`."
         }
       }
     },
     "citationEurlex": {
       "type": "object",
-      "description": "EU law via EUR-Lex CELEX/ELI (freely reusable; pinnable and drift-watchable). Reserved for the framework packs (#7, #9) — schema-ready now so packs need no schema change.",
+      "description": "EU law via EUR-Lex CELEX/ELI (freely reusable; pinnable and drift-watchable). Reserved for the framework packs (#7, #9) \u2014 schema-ready now so packs need no schema change.",
       "additionalProperties": false,
-      "required": ["adapter", "celex"],
+      "required": [
+        "adapter",
+        "celex"
+      ],
       "properties": {
-        "adapter": { "const": "eurlex" },
-        "celex": { "type": "string", "pattern": "^[0-9]{5}[A-Z]{1,2}[0-9]{4}(\\([0-9]{2}\\))?$" },
-        "article": { "type": "string" },
-        "note": { "type": "string" },
+        "adapter": {
+          "const": "eurlex"
+        },
+        "celex": {
+          "type": "string",
+          "pattern": "^[0-9]{5}[A-Z]{1,2}[0-9]{4}(\\([0-9]{2}\\))?$"
+        },
+        "article": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        },
         "pinned": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["consolidation_date", "checked"],
+          "required": [
+            "consolidation_date",
+            "checked"
+          ],
           "properties": {
-            "consolidation_date": { "$ref": "#/definitions/isoDate" },
-            "checked": { "$ref": "#/definitions/isoDate" }
+            "consolidation_date": {
+              "$ref": "#/definitions/isoDate"
+            },
+            "checked": {
+              "$ref": "#/definitions/isoDate"
+            }
           }
         }
       }
@@ -226,26 +371,41 @@
       "type": "object",
       "description": "Public guidance document (FDA guidance, MDCG, EudraLex annex, state statute page) pinned by URL + sha256.",
       "additionalProperties": false,
-      "required": ["adapter", "name", "url"],
+      "required": [
+        "adapter",
+        "name",
+        "url"
+      ],
       "properties": {
-        "adapter": { "const": "document" },
-        "name": { "type": "string", "minLength": 1 },
-        "url": { "type": "string", "pattern": "^https://" },
+        "adapter": {
+          "const": "document"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "url": {
+          "type": "string",
+          "pattern": "^https://"
+        },
         "normalization": {
           "type": "string",
-          "enum": ["raw", "text"],
+          "enum": [
+            "raw",
+            "text"
+          ],
           "default": "raw",
           "description": "raw = checksum the bytes (PDFs). text = strip markup and collapse whitespace before checksumming (HTML statute pages), so template changes don't fire false drift alarms."
         },
         "auto_poll": {
           "type": "boolean",
           "default": true,
-          "description": "false = the upstream drift watch (#4) skips re-fetching this source because its host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). The sha256 pin still records the last manually-verified state; pair with a fedreg citation for the automated signal. Listed as 'manual re-verification' in the watcher summary. NOT a licence to stop checking — set reverify_days so the pin ages out (#41)."
+          "description": "false = the upstream drift watch (#4) skips re-fetching this source because its host blocks datacenter IPs (e.g. FDA PDFs 404 from GitHub runners). The sha256 pin still records the last manually-verified state; pair with a fedreg citation for the automated signal. Listed as 'manual re-verification' in the watcher summary. NOT a licence to stop checking \u2014 set reverify_days so the pin ages out (#41)."
         },
         "reverify_days": {
           "type": "integer",
           "minimum": 1,
-          "description": "Maximum age, in days, of pinned.retrieved before the watch files a drift issue demanding human re-verification. Required in practice for auto_poll:false sources — without it an unpolled source is invisible forever, which is how CTL-CSA-001 carried a mislabelled pin undetected (#41)."
+          "description": "Maximum age, in days, of pinned.retrieved before the watch files a drift issue demanding human re-verification. Required in practice for auto_poll:false sources \u2014 without it an unpolled source is invisible forever, which is how CTL-CSA-001 carried a mislabelled pin undetected (#41)."
         },
         "asserts": {
           "type": "object",
@@ -259,39 +419,65 @@
             },
             "issued": {
               "$ref": "#/definitions/isoDate",
-              "description": "The issue/revision date the document states on its own face — not the date we retrieved it."
+              "description": "The issue/revision date the document states on its own face \u2014 not the date we retrieved it."
             },
             "version": {
               "type": "string",
               "minLength": 1,
-              "description": "The document's own statement of which version it is, verbatim enough to appear in its text. For California statutes this is the enactment/amendment provenance line (e.g. 'Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)'), which pins the exact legislative version — a stronger identity than a title, because it changes whenever the law does (#43)."
+              "description": "The document's own statement of which version it is, verbatim enough to appear in its text. For California statutes this is the enactment/amendment provenance line (e.g. 'Amended by Stats. 2024, Ch. 940, Sec. 1. (AB 1824)'), which pins the exact legislative version \u2014 a stronger identity than a title, because it changes whenever the law does (#43)."
             }
           }
         },
-        "note": { "type": "string" },
+        "note": {
+          "type": "string"
+        },
         "pinned": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["sha256", "retrieved"],
+          "required": [
+            "sha256",
+            "retrieved"
+          ],
           "properties": {
-            "sha256": { "$ref": "#/definitions/sha256" },
-            "retrieved": { "$ref": "#/definitions/isoDate" }
+            "sha256": {
+              "$ref": "#/definitions/sha256"
+            },
+            "retrieved": {
+              "$ref": "#/definitions/isoDate"
+            }
           }
+        },
+        "cadence": {
+          "enum": [
+            "weekly",
+            "monthly",
+            "quarterly"
+          ],
+          "description": "How often the drift watch polls this source. Omit to inherit drift.default_cadence. Choose against the source's observed change history and justify it in `note`."
         }
       }
     },
     "citationClause": {
       "type": "object",
-      "description": "Copyrighted framework cited by clause identifier ONLY. No text body is representable — additionalProperties:false makes vendoring paywalled text a schema violation, not a policy violation.",
+      "description": "Copyrighted framework cited by clause identifier ONLY. No text body is representable \u2014 additionalProperties:false makes vendoring paywalled text a schema violation, not a policy violation.",
       "additionalProperties": false,
-      "required": ["adapter", "framework", "clause"],
+      "required": [
+        "adapter",
+        "framework",
+        "clause"
+      ],
       "properties": {
-        "adapter": { "const": "clause" },
+        "adapter": {
+          "const": "clause"
+        },
         "framework": {
           "type": "string",
           "description": "e.g. SOC2-TSC-2017, GAMP5-2E, IEC-62304-2006, ISO-14971-2019."
         },
-        "clause": { "type": "string", "minLength": 1 },
+        "clause": {
+          "type": "string",
+          "minLength": 1
+        },
         "edition_note": {
           "type": "string",
           "description": "Human note about which edition; new-edition checks are manual (no automated polling of paywalled sources)."
@@ -301,15 +487,26 @@
     "implementation": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["type", "ref"],
+      "required": [
+        "type",
+        "ref"
+      ],
       "properties": {
         "type": {
           "type": "string",
-          "enum": ["skill", "hook", "architecture"],
-          "description": "skill → skills/<ref>/SKILL.md must exist. hook → hooks/<ref>.md must exist. architecture → posture documented in docs/compliance-model.md (no file check)."
+          "enum": [
+            "skill",
+            "hook",
+            "architecture"
+          ],
+          "description": "skill \u2192 skills/<ref>/SKILL.md must exist. hook \u2192 hooks/<ref>.md must exist. architecture \u2192 posture documented in docs/compliance-model.md (no file check)."
         },
-        "ref": { "$ref": "#/definitions/slug" },
-        "note": { "type": "string" }
+        "ref": {
+          "$ref": "#/definitions/slug"
+        },
+        "note": {
+          "type": "string"
+        }
       }
     }
   }
