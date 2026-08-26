@@ -8,6 +8,18 @@
 # skills/, hooks/, and the generated docs.
 version: 1
 
+# Upstream drift-watch scheduling (#53). Cadence is declared per source, not applied uniformly:
+# measured over ~10 years, 21 CFR §11.10/§11.50 and 45 CFR §164.312 changed ONCE each, while 21 CFR
+# part 820 changed five times — three of them since 2024, mid-QMSR transition. Weekly polling of
+# everything spent ~570 requests a year to catch 1-2 real events.
+#
+# HONESTY: lowering cadence is an EFFICIENCY choice, not a robustness one. A quarterly source can be
+# stale for up to a quarter before the watch notices. Frequency was never the binding constraint on
+# the failure this repo actually had — the CSA supersession (#41) survived five months of WEEKLY
+# polling because the gap was structural (auto_poll:false, no assertions), not temporal.
+drift:
+  default_cadence: monthly
+
 preamble:
   intended_use: controls/intended-use.md
 
@@ -49,6 +61,7 @@ controls:
         cfr_title: 45
         cfr_part: "164"
         cfr_section: "164.312"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-30)
         note: Security Rule technical safeguards
         pinned:
           amendment_date: 2016-12-30
@@ -77,6 +90,7 @@ controls:
         cfr_title: 45
         cfr_part: "164"
         cfr_section: "164.502"
+        cadence: monthly # velocity: 3 amendments, 2 of them in 2024 (2024-04-26, 2024-06-25)
         note: Uses and disclosures; minimum necessary
         pinned:
           amendment_date: 2024-06-25
@@ -105,6 +119,7 @@ controls:
         cfr_title: 45
         cfr_part: "164"
         cfr_section: "164.312"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-30)
         note: Access control
         pinned:
           amendment_date: 2016-12-30
@@ -154,6 +169,7 @@ controls:
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.10"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-29); unchanged for a decade
         note: Controls for closed systems, (g) authority checks
         pinned:
           amendment_date: 2016-12-29
@@ -177,6 +193,7 @@ controls:
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.10"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-29); unchanged for a decade
         note: (e) audit trails, (k) documentation controls
         pinned:
           amendment_date: 2016-12-29
@@ -198,6 +215,7 @@ controls:
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.50"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-29); unchanged for a decade
         note: Signature manifestations
         pinned:
           amendment_date: 2016-12-29
@@ -219,6 +237,7 @@ controls:
         cfr_title: 21
         cfr_part: "11"
         cfr_section: "11.10"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-29); unchanged for a decade
         note: (a) validation of systems
         pinned:
           amendment_date: 2016-12-29
@@ -226,6 +245,7 @@ controls:
       - adapter: ecfr
         cfr_title: 21
         cfr_part: "820"
+        cadence: weekly # velocity: 5 amendments, 3 since 2024 (2024-10-15, 2026-02-02, 2026-02-04) — QMSR transition is live
         note: Quality Management System Regulation (QMSR) — ISO 13485:2016 incorporated by reference; final rule 89 FR 7496, effective 2026-02-02. The Feb 2026 CSA guidance is written against this amended Part 820, which is why it is cited here (#41).
         pinned:
           amendment_date: 2026-02-04
@@ -330,6 +350,7 @@ controls:
         name: CPPA final CCPA regulations, Cal. Code Regs. tit. 11 div. 6 (text of 2023-03-29)
         url: https://cppa.ca.gov/regulations/pdf/20230329_final_regs_text.pdf
         normalization: raw
+        cadence: quarterly # a dated final-text PDF; its bytes are fixed, a NEW adopted text is the real signal
         asserts:
           title: means the California Consumer Privacy Act of 2018
         note: "Regulations elaborating the statutory definitions and business handling duties. Dated final-text PDF — stable bytes; a newer adopted text is a drift signal (#4). ASSERTION LIMITATION (#43): extractPdfText recovers the body text but NOT the edition date — \"March 29\", \"Title 11\" and \"division 6\" are all absent from the extractable text, which is interleaved with accessibility-report metadata and octal-escaped punctuation. The 2023-03-29 edition therefore rests on the publisher's dated filename plus the sha256, not on anything the document says about itself; only the body-identity assertion above is corroborated. An assertion that looks verified but is not would be worse than none."

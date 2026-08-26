@@ -89,6 +89,35 @@ export function isManualDocument(c: Citation): boolean {
   return c.adapter === "document" && c.auto_poll === false;
 }
 
+// --- cadence (#53) ---------------------------------------------------------
+//
+// Sources move at very different rates: 21 CFR §11.10 and §11.50 have not changed since 2016, while
+// part 820 was amended three times in two years (QMSR transition). Polling everything weekly spent
+// ~570 requests a year to catch 1-2 real events, and applied the same cadence to both.
+//
+// Cadence is DECLARED per source with a global default, and it is an efficiency choice, not a
+// robustness one: a quarterly source can be stale for up to a quarter before the watch notices. That
+// trade is stated in controls/README.md rather than implied. Note that frequency was never the
+// binding constraint on the failure this repo actually had — the CSA supersession (#41) survived five
+// months of WEEKLY polling because the gap was structural, not temporal.
+
+export const CADENCES = ["weekly", "monthly", "quarterly"] as const;
+export type Cadence = (typeof CADENCES)[number];
+export const DEFAULT_CADENCE: Cadence = "monthly";
+
+export function isCadence(value: unknown): value is Cadence {
+  return typeof value === "string" && (CADENCES as readonly string[]).includes(value);
+}
+
+export function defaultCadenceOf(reg: Registry): Cadence {
+  const declared = (reg as { drift?: { default_cadence?: unknown } }).drift?.default_cadence;
+  return isCadence(declared) ? declared : DEFAULT_CADENCE;
+}
+
+export function cadenceOf(c: Citation, reg: Registry): Cadence {
+  return isCadence(c.cadence) ? c.cadence : defaultCadenceOf(reg);
+}
+
 // Unique pinnable sources the watcher polls. ecfr + fedreg + document(auto_poll!==false). clause is
 // copyrighted (never polled); eurlex has no citations yet; document with auto_poll:false is manual.
 export function pinnableSources(reg: Registry): PinnableSource[] {
@@ -107,6 +136,23 @@ export function pinnableSources(reg: Registry): PinnableSource[] {
     }
   }
   return [...byKey.values()];
+}
+
+// Sources due on a given tier. `cadence` undefined = every tier (local dry-runs and manual dispatch
+// keep polling everything, so a human never gets a partial answer without asking for one).
+export function sourcesForCadence(reg: Registry, cadence?: Cadence): PinnableSource[] {
+  const all = pinnableSources(reg);
+  if (cadence === undefined) return all;
+  return all.filter((s) => cadenceOf(s.citation, reg) === cadence);
+}
+
+// Sources a cadence-scoped run did NOT look at — reported so a run that polls 3 of 11 sources cannot
+// read like a run that polled all 11.
+export function skippedForCadence(reg: Registry, cadence?: Cadence): Array<{ label: string; cadence: Cadence }> {
+  if (cadence === undefined) return [];
+  return pinnableSources(reg)
+    .filter((s) => cadenceOf(s.citation, reg) !== cadence)
+    .map((s) => ({ label: s.label, cadence: cadenceOf(s.citation, reg) }));
 }
 
 // Document sources deliberately excluded from polling (host blocks CI) — surfaced in the summary.
@@ -579,14 +625,15 @@ function manualDocumentSources(reg: Registry): PinnableSource[] {
 
 export async function collect(
   reg: Registry,
-  fetchers: Fetchers = realFetchers
+  fetchers: Fetchers = realFetchers,
+  cadence?: Cadence
 ): Promise<{ findings: DriftFinding[]; errors: WatcherError[] }> {
   const findings: DriftFinding[] = [];
   const errors: WatcherError[] = [];
   const push = (src: PinnableSource, adapter: PolledAdapter, oldValue: string, newValue: string) =>
     findings.push({ key: src.key, label: src.label, adapter, oldValue, newValue, controlIds: affectedControls(reg, src.key), url: sourceUrlFor(src.citation) });
 
-  for (const src of pinnableSources(reg)) {
+  for (const src of sourcesForCadence(reg, cadence)) {
     const c = src.citation;
     try {
       if (src.adapter === "ecfr") {
@@ -675,12 +722,24 @@ export function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+// --cadence=<tier> scopes the run to one tier (the workflow passes it per cron). Absent = poll
+// everything, so a human running drift:dry-run never gets a partial answer without asking for one.
+export function cadenceArg(argv: string[]): Cadence | undefined {
+  const raw = argv.find((a) => a.startsWith("--cadence="))?.split("=")[1];
+  if (raw === undefined || raw === "all") return undefined;
+  if (!isCadence(raw)) {
+    throw new Error(`--cadence must be one of ${CADENCES.join(", ")} (or "all"); got "${raw}"`);
+  }
+  return raw;
+}
+
 async function main(): Promise<void> {
   const dryRun = process.argv.includes("--dry-run");
   const includeManual = process.argv.includes("--include-manual");
+  const cadence = cadenceArg(process.argv);
   const reg = loadRegistry();
   const fetchers = retrying(realFetchers);
-  const { findings, errors } = await collect(reg, fetchers);
+  const { findings, errors } = await collect(reg, fetchers, cadence);
 
   // Offline: a manual source past its re-verification window is drift in its own right (#41).
   findings.push(...staleManualFindings(reg, todayIso()));
@@ -691,9 +750,17 @@ async function main(): Promise<void> {
     errors.push(...extra.errors);
   }
 
-  console.log(`checked ${pinnableSources(reg).length} pinnable source(s): ${findings.length} drifted, ${errors.length} error(s)`);
+  const polled = sourcesForCadence(reg, cadence);
+  const scope = cadence ? `${cadence} tier` : "all tiers";
+  console.log(`checked ${polled.length} of ${pinnableSources(reg).length} pinnable source(s) [${scope}]: ${findings.length} drifted, ${errors.length} error(s)`);
   for (const f of findings) console.log(`  ${(f.kind ?? "value").toUpperCase()} ${f.label}: ${f.oldValue} → ${f.newValue} (controls: ${f.controlIds.join(", ")})`);
   for (const e of errors) console.log(`  ERROR ${e.label}: ${e.message}`);
+  // A cadence-scoped run must not read like a full run. Name what it did not look at, and when it will.
+  const skipped = skippedForCadence(reg, cadence);
+  if (skipped.length > 0) {
+    console.log(`not polled by this run (other cadence tiers): ${skipped.length} source(s)`);
+    for (const s of skipped) console.log(`  [${s.cadence}] ${s.label}`);
+  }
   const manual = manualSources(reg);
   if (manual.length > 0 && !includeManual) {
     console.log(`manual re-verification (host blocks automated access): ${manual.join("; ")}`);

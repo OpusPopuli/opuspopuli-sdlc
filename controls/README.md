@@ -190,6 +190,42 @@ npm run drift:dry-run   # fetch live, print drift, file nothing (safe to run any
 npm run drift:check     # the CI entry point — files issues (needs GITHUB_TOKEN + GITHUB_REPOSITORY)
 ```
 
+### Cadence — how often each source is polled
+
+Sources move at very different rates, so cadence is **declared per source** rather than applied
+uniformly (#53). Measured over ~10 years of eCFR history:
+
+| Source | Changes | Tier |
+|---|---|---|
+| 21 CFR part 820 (QMSR) | 5 — three since 2024 | `weekly` |
+| 45 CFR §164.502 | 3 — two in 2024 | `monthly` |
+| 21 CFR §11.10, §11.50 | 1 each, 2016 | `quarterly` |
+| 45 CFR §164.312 | 1, 2016 | `quarterly` |
+
+```yaml
+drift:
+  default_cadence: monthly     # applies to any polled citation that declares none
+
+- adapter: ecfr
+  cfr_part: "820"
+  cadence: weekly              # justify the tier in a comment — a tier with no reason is a guess
+```
+
+Each tier has its own cron in `.github/workflows/upstream-drift.yml`; the workflow maps the firing
+cron to a tier and passes `--cadence=<tier>`. Running `drift:check`/`drift:dry-run` with no flag (or
+`--cadence=all`) polls **everything**, so a human never gets a partial answer without asking for one.
+An unmapped cron falls through to `all`: over-polling wastes a request, under-polling misses a
+regulation change, so the failure mode is biased toward the former. A test asserts the tiers partition
+every source exactly once and that the workflow's cron↔tier map matches the cadence enum.
+
+> **This is an efficiency choice, not a robustness improvement, and the trade is real.** A `quarterly`
+> source can be stale for up to a quarter before the watch notices. Weekly polling of everything cost
+> ~570 requests a year to catch 1–2 actual events, which is why the default moved to `monthly` — but
+> nothing here detects a change *faster* than before, and several sources are now detected slower.
+> Note also that frequency was never the binding constraint on the failure this repo actually had: the
+> CSA supersession (#41) survived five months of weekly polling because the gap was structural
+> (`auto_poll: false`, no assertions), not temporal. Cadence tuning does not substitute for coverage.
+
 **Amendment dates are per *section*, not per part.** Sections of one part have independent histories:
 21 CFR §11.1 (`2022-02-01`) and §11.100 (`2023-03-02`) carry later dates than §11.10 and §11.50
 (`2016-12-29`), and the part-level authority line lists FR actions for all of them together. Pin the

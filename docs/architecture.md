@@ -125,7 +125,8 @@ The control mapping is reconciled continuously, in two directions:
 
   The forward check proves a skill *cites* its control. It cannot prove the skill *implements* it —
   that remains human review of the footer against the body.
-- **Upstream drift** — `upstream-drift.yml` runs `npm run drift:check` weekly: it compares the live
+- **Upstream drift** — `upstream-drift.yml` runs `npm run drift:check` on a per-source cadence
+  (`weekly`/`monthly`/`quarterly`, declared in the registry, default monthly — one cron per tier, #53): it compares the live
   sources to the pins and files a triage-ready issue per changed source (labelled `upstream-drift`,
   otherwise unlabelled so `/op-issue-triage` classifies it). It never re-pins automatically — a
   regulation change is reviewed through the lifecycle, not silently absorbed. On a fetch/API error
