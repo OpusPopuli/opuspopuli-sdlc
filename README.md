@@ -5,7 +5,7 @@ generated skills for OpenAI Codex.**
 
 Most "AI coding" workflows stop at "the model wrote a function." This one encodes the *whole lifecycle* —
 intake → research → plan → build → verify → review → ship → operate — as versioned, human-gated skills that
-**emit compliance evidence (HIPAA / SOC 2 / 21 CFR Part 11) as a byproduct of normal work.**
+**emit compliance evidence (HIPAA / HITECH, SOC 2, 21 CFR Part 11, CCPA) as a byproduct of normal work.**
 
 Install it once and every Claude Code session — local or remote — gets the same skills, so the workflow gates
 declared in each repo's `CLAUDE.md` are actually enforceable everywhere.

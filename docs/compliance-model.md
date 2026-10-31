@@ -47,9 +47,12 @@ security-review + regulated-data gate** (scoped to the repo's compliance profile
 
 | Control ID | Framework | Control | Implemented by |
 |------------|-----------|---------|----------------|
-| `CTL-HIPAA-001` | HIPAA | PHI never appears in logs, prompts, or fixtures | `op-data-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
-| `CTL-HIPAA-002` | HIPAA | Runtime data residency and minimum necessary for regulated data | consuming-app-runtime-residency (arch), `op-review`, `op-validate` |
-| `CTL-HIPAA-003` | HIPAA | Access to PHI is restricted and reviewed at the API surface | `op-review` |
+| `CTL-HIPAA-001` | HIPAA / HITECH | PHI never appears in logs, prompts, or fixtures | `op-data-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
+| `CTL-HIPAA-002` | HIPAA / HITECH | Runtime data residency and minimum necessary for regulated data | consuming-app-runtime-residency (arch), `op-review`, `op-validate` |
+| `CTL-HIPAA-003` | HIPAA / HITECH | Access to PHI is restricted and reviewed at the API surface | `op-review` |
+| `CTL-HIPAA-004` | HIPAA / HITECH | Breach readiness — an incident touching PHI is recorded with what the four-factor breach assessment needs | `op-hotfix` |
+| `CTL-HIPAA-005` | HIPAA / HITECH | Encryption safe harbor — PHI is stored and transmitted encrypted to the HHS-specified standard | `op-issue-plan`, `op-review`, consuming-app-encryption (arch) |
+| `CTL-HIPAA-006` | HIPAA / HITECH | Business associates — a third party that will receive PHI is identified at plan time and covered by a BAA | `op-issue-plan`, `op-review`, business-associate-agreements (arch) |
 | `CTL-SOC2-001` | SOC 2 | Change management — plan, independent review, enforced gate, recorded change | `op-issue-plan`, `op-review`, `pre-push-gate` (hook), `op-change-record` |
 | `CTL-SOD-001` | SOC 2 | Separation of duties — self-review is flagged and requires countersignature | `op-review`, `op-change-record` |
 | `CTL-P11-001` | 21 CFR Part 11 | Requirement-to-code-to-test-to-release traceability | `op-trace` |
@@ -95,6 +98,11 @@ Every control is pinned to its authoritative source, but sources fall into two l
   identifier **only**. Their text is never vendored into this MIT-licensed repo; the `clause`
   citation schema structurally forbids a text body. This boundary is a licensing requirement, not a
   stylistic choice — an MIT repo cannot redistribute paywalled standards text.
+- **Not mapped: HITRUST CSF.** Its license forbids storing, disclosing, or creating derivative works
+  from any part of the CSF without HITRUST's written consent, which a public control mapping would
+  be, even by identifier only. HITRUST is harmonized from HIPAA, NIST, PCI DSS and SOC 2, so the
+  evidence these controls produce still feeds a HITRUST assessment. An organization that licenses the
+  CSF can keep its mapping in a private overlay (#65).
 
 ## Drift is enforced in both directions
 
