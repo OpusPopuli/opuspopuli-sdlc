@@ -9,8 +9,9 @@ traceability are just good practice. Once those are encoded as skills that *reco
 evidence an auditor wants falls out of the pipeline instead of being reconstructed under duress.
 
 > **Honesty guardrail.** Everything here is *audit-ready scaffolding and evidence generation* that
-> **supports** the controls below. It does **not** make an organization HIPAA / SOC 2 / Part 11 compliant
-> on its own — that requires policies, training, risk assessments, vendor BAAs, and an actual audit. Never
+> **supports** the controls below. It does **not** make an organization HIPAA, SOC 2, Part 11, CCPA or PCI DSS
+> compliant on its own — that requires policies, training, risk assessments, vendor BAAs, and an actual
+> audit (for PCI DSS, a QSA assessment or self-assessment questionnaire). Never
 > describe a release as "compliant" on the strength of these artifacts; describe it as "audit-ready."
 
 ## The lifecycle as skills

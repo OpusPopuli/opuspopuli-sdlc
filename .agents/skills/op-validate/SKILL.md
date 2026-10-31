@@ -16,7 +16,7 @@ was planned, reviewed, tested, verified, and screened for regulated-data exposur
 **Scope to the repo's compliance profile.** Read `.sdlc/compliance-profile.yaml` (or the deprecated
 `.claude/compliance-profile.yaml`, and record in the header that it should be moved; see
 `controls/README.md` in the `opuspopuli-sdlc` plugin) and record which framework families are active.
-The pack's framework-specific sections (HIPAA, Part 11, GxP, privacy) are included only for active
+The pack's framework-specific sections (HIPAA/HITECH, Part 11, GxP, privacy, PCI DSS) are included only for active
 families; sections for inactive families are omitted with a one-line "not in scope for this repo's
 profile" note rather than left blank. Framework-agnostic evidence (plans, change records,
 traceability, test results) is always included. **If no profile is declared, state that plainly in

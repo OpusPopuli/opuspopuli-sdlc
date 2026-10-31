@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "opuspopuli-sdlc",
-      "description": "Audit-ready AI-assisted SDLC: plan-first development, multi-lens review, behavioral verification, and HIPAA/SOC 2/Part 11 evidence generation.",
+      "description": "Audit-ready AI-assisted SDLC for Claude Code and Codex: plan-first development, multi-lens review, behavioral verification, and HIPAA/HITECH, SOC 2, Part 11, CCPA and PCI DSS evidence generation.",
       "source": "./",
       "category": "workflow"
     }
