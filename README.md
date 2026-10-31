@@ -1,6 +1,7 @@
 # opuspopuli-sdlc
 
-**An audit-ready, AI-assisted software development lifecycle, packaged as a Claude Code plugin.**
+**An audit-ready, AI-assisted software development lifecycle, packaged as a Claude Code plugin, with
+generated skills for OpenAI Codex.**
 
 Most "AI coding" workflows stop at "the model wrote a function." This one encodes the *whole lifecycle* —
 intake → research → plan → build → verify → review → ship → operate — as versioned, human-gated skills that
@@ -52,6 +53,29 @@ the profile model, the toolchain, and how to adopt it in your own repo — see
 
 To make a repo install it automatically for everyone, add the marketplace + enabled plugin to the repo's
 `.claude/settings.json` (team config), then commit it.
+
+### Using Codex
+
+The same 18 skills ship for Codex in [`.agents/skills/`](.agents/skills/), generated from `skills/`. Codex
+discovers repo skills in `.agents/skills/`, so copy them into the consuming repo and commit them:
+
+```
+git clone https://github.com/OpusPopuli/opuspopuli-sdlc ../opuspopuli-sdlc
+mkdir -p .agents/skills
+cp -R ../opuspopuli-sdlc/.agents/skills/op-* .agents/skills/
+cp ../opuspopuli-sdlc/templates/codex/AGENTS.md AGENTS.md   # or merge into your existing AGENTS.md
+```
+
+Invoke a skill with `$op-issue-plan`, `$op-verify` and so on. Codex has no `$ARGUMENTS`, so give the input
+in the request ("`$op-issue-plan` for issue 42"); each skill says what input it needs. Each copied file's
+header names the plugin version it came from. To upgrade, pull this repo and copy again.
+
+Both runtimes follow the same workflow, gates, controls and evidence; only the invocation syntax and the
+AI data-handling posture recorded by `op-validate` differ. For the push-time gate on Codex, see
+[`hooks/pre-push-gate.md`](hooks/pre-push-gate.md) (`--provider codex`).
+
+**Tested with Codex:** discovery of all 18 skills (codex-cli 0.166.0). End-to-end runs of `op-issue-plan`,
+`op-data-scan` and `op-verify` are the first thing to check on a real repo before rolling out wider.
 
 ## Declare your compliance profile
 

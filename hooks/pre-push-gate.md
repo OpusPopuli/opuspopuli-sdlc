@@ -91,7 +91,7 @@ The stages above are for **consuming** repositories. Contributors to *this* repo
 (`opuspopuli-sdlc`) — the one that holds the control registry — should additionally run:
 
 ```
-npm run check   # validate registry + docs match generator + registry↔skills/hooks reconcile + tests
+npm run check   # validate registry + docs match generator + registry↔skills/hooks reconcile + Codex skills in sync + tests
 ```
 
 before pushing, to catch registry/doc drift locally. The same command is the entire job of the

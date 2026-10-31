@@ -1,0 +1,78 @@
+---
+name: op-validate
+description: Assemble the release validation / qualification evidence pack for an auditor (HIPAA-first, CSV/CSA-style). Use at release time to produce the audit binder.
+---
+
+<!-- GENERATED from skills/op-validate/SKILL.md (opuspopuli-sdlc v0.5.0) by
+     controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
+
+**Input:** `<release version, e.g. v1.4.0>`. Codex has no argument substitution: take `{input}`
+from the user's request, and ask for it if the request does not say.
+
+Assemble the validation evidence pack for release {input} — the "binder" an auditor asks for. This is
+the Part 11 / GxP computer-software-assurance idea applied lightly: show that everything in this release
+was planned, reviewed, tested, verified, and screened for regulated-data exposure, with evidence.
+
+**Scope to the repo's compliance profile.** Read `.sdlc/compliance-profile.yaml` (or the deprecated
+`.claude/compliance-profile.yaml`, and record in the header that it should be moved; see
+`controls/README.md` in the `opuspopuli-sdlc` plugin) and record which framework families are active.
+The pack's framework-specific sections (HIPAA, Part 11, GxP, privacy) are included only for active
+families; sections for inactive families are omitted with a one-line "not in scope for this repo's
+profile" note rather than left blank. Framework-agnostic evidence (plans, change records,
+traceability, test results) is always included. **If no profile is declared, state that plainly in
+the header** and include only the framework-agnostic evidence.
+
+Collect, for every change since the previous release tag (use `$op-release`'s PR list as the index):
+
+1. **Scope** — list of PRs/issues in this release, each with its data classification
+2. **Traceability** — link each issue's RTM (`docs/compliance/traceability/*-rtm.md`); flag any change
+   with no RTM or an open traceability gap
+3. **Change control** — link each `docs/compliance/changes/*-change-record.md`; flag any missing record,
+   or any record whose review was a self-review without countersignature (separation-of-duties exception)
+4. **Verification & validation** — present in IQ/OQ/PQ-legible terms so a GxP reader can map it,
+   without producing any separate IQ/OQ/PQ documents (CSA posture — these are labels on evidence the
+   pipeline already emits):
+   - *Installation-qualification-equivalent (IQ)* — environment reproducibility: the pinned
+     toolchain (`.nvmrc`), the committed lockfile, and the reproducible CI configuration.
+   - *Operational-qualification-equivalent (OQ)* — aggregate test results, coverage vs. the enforced
+     floors, and the `$op-verify` behavioral outcomes.
+   - *Performance-qualification-equivalent (PQ)* — production-fitness / UAT evidence for the release.
+   Link the system-level control registry (`controls/registry.yaml`) as the validation anchor.
+5. **Security** — the `$op-security` results (CVE/Trivy/gitleaks) and the pre-push gate outcomes
+6. **Regulated-data handling** — the `$op-data-scan` results across the release, for the data classes
+   the repo's compliance profile makes active; explicitly state that no critical/high exposure
+   findings remain open. If the consuming application keeps regulated data in its own trust boundary
+   at runtime (e.g. self-hosted inference, as Opus Populi does), record that architectural posture
+   here as the app's `CTL-HIPAA-002` evidence. Do **not** conflate it with how the SDLC's own
+   development-time AI (Codex) handles source code — that is qualified separately under
+   `CTL-AIQ-001`. When `hipaa` is active this section is the HIPAA data-handling control's evidence.
+7. **Risk** — the consolidated risk register across the release and the status of each mitigation
+8. **AI tool qualification (`CTL-AIQ-001`)** — the auditor's question "how is the AI assisting this
+   SDLC itself controlled?". Record, from real evidence rather than assumption:
+   - **Model and version** actually used for the work in this release (as configured for Codex, e.g. the `model` in
+     `~/.codex/config.toml` or the session log), and the **skill version** from this skill's generated header (`opuspopuli-sdlc` vX.Y.Z). If more than one
+     model was used across the release, name each. If it cannot be determined for some change, write
+     `UNKNOWN` — never infer it.
+   - **Gating** — that every lifecycle phase had a human approval point and no autonomous production
+     change was made. Where a gate was skipped or a change was self-reviewed, it belongs in
+     Exceptions (9) below, not here.
+   - **Data-handling posture** — source code and diffs are sent to OpenAI's API; this pack does
+     **not** claim code stayed in a local trust boundary. Note that an organization qualifying the
+     tool should assess OpenAI's data-handling terms (training-on-inputs, zero-data-retention
+     options). Keep this strictly distinct from the *consuming application's* runtime residency in
+     (6) — they are different systems and conflating them is the overclaim `CTL-AIQ-001` exists to
+     prevent.
+   - **Reproducibility** — that the evidence in this pack can be regenerated by re-running the
+     commands it cites, so a reader can check the work rather than trust the author.
+9. **Exceptions** — every gap, waiver, or `--no-verify` override in this release, with justification.
+   An honest exceptions list is mandatory; an evidence pack that hides gaps is a finding, not a pass.
+
+Output the pack as `docs/compliance/releases/<version>-validation.md` and show me before writing.
+
+The pack is the evidence for `CTL-CSA-001` (validation evidence — risk-based release qualification,
+CSA posture), `CTL-AIQ-001` (AI tool qualification), and `CTL-HIPAA-002` (the consuming app's runtime
+data residency, recorded in section 6).
+
+**Honesty guardrail:** this pack is *audit-ready scaffolding and evidence* — it supports HIPAA/SOC 2/
+Part 11 controls. It does not by itself make the organization compliant; that requires policies,
+training, risk assessments, BAAs, and an actual audit. State that caveat in the pack's header.

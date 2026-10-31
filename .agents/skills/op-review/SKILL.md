@@ -1,0 +1,46 @@
+---
+name: op-review
+description: Multi-lens code review of the current diff, with separation-of-duties and PHI-exposure checks. Use before opening or merging a PR.
+---
+
+<!-- GENERATED from skills/op-review/SKILL.md (opuspopuli-sdlc v0.5.0) by
+     controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
+
+Review the current staged changes, or the diff against the repository's base branch.
+
+Resolve that branch rather than assuming it — this plugin is used across repos on
+different branching models. Prefer the PR's own base when reviewing a PR; otherwise
+take the repository default (`gh repo view --json defaultBranchRef`), falling back to
+`main`.
+
+Run the review as **independent lenses** and merge the results — do not let one concern mask another.
+Where useful, run each lens as a separate pass so each looks with fresh eyes, then reconcile:
+
+- **Correctness** — does it do what the issue requires? Null/undefined on hot paths, empty arrays, race conditions
+- **Security** — injection, auth/HMAC/CSRF bypass, SSRF, over-exposed data in GraphQL resolvers
+- **Regulated-data handling** — does any regulated data reach logs, error messages, prompts, fixtures, seed
+  data, or an over-broad GraphQL field? Is field-level access appropriately restricted? Scope this lens to
+  the data classes the repo's compliance profile makes active (`.sdlc/compliance-profile.yaml`, or the deprecated `.claude/` copy) — PHI/PII
+  when `hipaa` is declared, CCPA personal information when `us-state-privacy` is declared, and so on. With
+  no profile, default to the strict PHI/PII lens. (See `$op-data-scan`.)
+- **Performance** — N+1 queries, missing indexes, large payloads
+- **TypeScript strictness** — no implicit `any`, proper typing
+- **Test coverage** — are the important paths (including the regulated-data paths) tested?
+- **Consistency** — matches existing patterns in this codebase
+
+**Separation of duties (SOC 2 / Part 11):** determine the commit author(s) via `git log`. If the person
+running this review is also the sole author, say so plainly and record it as a *self-review* — for a
+change control record it must be countersigned by a second person before it counts as an independent review.
+
+Output a structured review: **blockers | suggestions | nitpicks**.
+Blockers must be fixed before merge. Suggestions are recommended. Nitpicks are optional.
+Note the author/reviewer identities at the top so `$op-change-record` can capture the sign-off.
+
+---
+
+**Controls implemented:** `CTL-HIPAA-002` (runtime data residency — verifies changes don't send regulated data to a third-party runtime service), `CTL-HIPAA-003` (access to PHI restricted and reviewed at the API surface), `CTL-SOC2-001` (change management — independent review), `CTL-SOD-001` (separation of duties), `CTL-CCPA-002` (consumer rights preserved), `CTL-CCPA-003` (reasonable security).
+
+Declared in [`controls/registry.yaml`](../../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).

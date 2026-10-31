@@ -17,6 +17,7 @@ controls/
   schema/registry.schema.json
   scripts/validate.ts      # offline: schema + semantic checks
   scripts/pin.ts           # network: fills pin blocks from authoritative sources
+  scripts/generate-agent-skills.ts  # offline: skills/ -> .agents/skills/ for Codex (--check in CI)
   scripts/*.test.ts        # node:test suites (offline)
 ```
 
@@ -30,6 +31,7 @@ npm ci
 npm run validate     # must pass offline
 npm test             # must pass offline
 npm run docs:check   # verify docs/compliance-model.md matches the registry (offline)
+npm run skills:check # verify .agents/skills/ (Codex) matches skills/ (offline); fix with skills:generate
 npm run pin -- --all-pending   # network required; normally run from CI
 ```
 
