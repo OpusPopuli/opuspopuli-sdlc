@@ -83,7 +83,8 @@ resolves and validates it the same way the skills do. When `hipaa` is declared, 
 > interpolated into a model prompt. Synthetic/faker data is fine; real data is not.
 
 When `us-state-privacy` is declared, apply the CCPA personal-information lens (broader than PII); when
-`gdpr` is declared, the EU personal-data lens. With no profile, default to the strict PHI/PII lens
+`gdpr` is declared, the EU personal-data lens; when `pci-dss` is declared, the payment card lens (PANs
+outside test numbers, unmasked PANs, and any stored sensitive authentication data). With no profile, default to the strict PHI/PII lens
 above. The framework-agnostic stages (coverage, duplication, lint, dependency/secret scans, AI
 code-review) always run. This makes the active data-handling control **enforced at push time**, not
 merely available as the `op-data-scan` skill.
@@ -103,7 +104,7 @@ PR. See [`controls/README.md`](../controls/README.md) for the individual checks.
 
 ---
 
-**Controls implemented:** `CTL-HIPAA-001` (PHI gate runs on every push), `CTL-SOC2-001` (change management — the enforced gate).
+**Controls implemented:** `CTL-HIPAA-001` (PHI gate runs on every push), `CTL-SOC2-001` (change management — the enforced gate), `CTL-PCI-001` (cardholder data lens on every push), `CTL-PCI-002` (code and security review before release), `CTL-PCI-003` (dependency, filesystem and secret scans block on high/critical).
 
 Declared in [`controls/registry.yaml`](../controls/registry.yaml) under each control's
 `implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either

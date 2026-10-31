@@ -3,7 +3,7 @@ name: op-verify
 description: Behavioral end-to-end verification of a change — drive the real flow and observe, not just run tests. Use after implementing before claiming a change works.
 ---
 
-<!-- GENERATED from skills/op-verify/SKILL.md (opuspopuli-sdlc v0.6.0) by
+<!-- GENERATED from skills/op-verify/SKILL.md (opuspopuli-sdlc v0.7.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<what the change is supposed to do> (optional; defaults to the current diff)`. Codex has no argument substitution: take `{input}`
