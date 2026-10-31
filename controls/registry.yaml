@@ -73,7 +73,7 @@ controls:
         ref: op-data-scan
       - type: hook
         ref: pre-push-gate
-        note: PHI gate runs on every push
+        note: deterministic data scan (data-scan.ts) plus the AI security lens on every push
       - type: architecture
         ref: audit-logger-pii-masking
     evidence:
@@ -489,6 +489,9 @@ controls:
     implemented_by:
       - type: skill
         ref: op-data-scan
+      - type: hook
+        ref: pre-push-gate
+        note: deterministic data scan for California personal information on every push
     evidence:
       - docs/compliance/releases/*-validation.md
     status: active
@@ -606,7 +609,7 @@ controls:
         ref: op-data-scan
       - type: hook
         ref: pre-push-gate
-        note: the security-review lens applies the cardholder-data classes when pci-dss is declared
+        note: deterministic card-data scan (data-scan.ts) plus the AI lens when pci-dss is declared
       - type: skill
         ref: op-review
     evidence:

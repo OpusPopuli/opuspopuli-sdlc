@@ -18,6 +18,7 @@ opuspopuli-sdlc/
 ├── templates/codex/AGENTS.md   # AGENTS.md template for consuming repos on Codex
 ├── hooks/pre-push-gate.md      # the enforcement gate consuming repos install as a git hook
 ├── hooks/review-gate.ts        # fail-closed AI review runner (claude | codex) for gate stages 7–8
+├── hooks/data-scan.ts          # deterministic regulated-data scanner, gate stage 6b and op-data-scan
 ├── controls/
 │   ├── registry.yaml           # THE control registry — the canonical asset
 │   ├── intended-use.md         # registry preamble: intended use, GxP impact, honesty guardrail

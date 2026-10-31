@@ -26,7 +26,9 @@ control mapping):
 
 Plus a repo-side enforcement gate: [`hooks/pre-push-gate.md`](hooks/pre-push-gate.md), whose AI review
 stages run on Claude Code or Codex through a fail-closed reference runner
-([`hooks/review-gate.ts`](hooks/review-gate.ts)), and a
+([`hooks/review-gate.ts`](hooks/review-gate.ts)), backed by a deterministic regulated-data scanner
+([`hooks/data-scan.ts`](hooks/data-scan.ts): card numbers, SSNs, Medicare IDs and sensitive fields
+reaching logs, in Java, TypeScript, Python, Go and C#), and a
 machine-readable **control registry** ([`controls/`](controls/README.md)) that pins every declared
 control to its authoritative source (eCFR, guidance documents, framework clause IDs) with
 provenance — the foundation for CI-enforced drift detection in both directions (issues #3/#4).

@@ -100,6 +100,9 @@ npm run profile:check                                        # all committed exa
   inert.
 - **Instruction layer:** the scan/review/validate skills honor the resolved profile because their
   prose instructs the AI to — they are markdown, not a runtime sandbox. We do not claim otherwise.
+- **Code layer for data scanning (#70):** `hooks/data-scan.ts` applies the profile itself: it maps
+  the declared families to data classes (a test fails if that mapping drifts from `frameworks:`
+  above) and scans only those classes, deterministically, at push time.
 
 **Data classes and the scan.** Each `frameworks:` entry may list `data_classes` — the regulated-data
 categories that family brings into scope for `op-data-scan`. The scan applies the union of data

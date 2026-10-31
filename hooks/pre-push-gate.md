@@ -15,8 +15,45 @@ override is meant to be logged as an exception in `op-validate`'s release pack).
 4. **Dependency audit** — block on HIGH/CRITICAL CVEs in production deps
 5. **Filesystem scan** — `trivy fs` for vulns + secrets
 6. **Secret scan** — `gitleaks detect`
+
+   **6b. Deterministic data scan** — `data-scan.ts` on the diff; block on critical/high
+   regulated-data findings (card numbers, card security data, SSNs, Medicare IDs, sensitive fields
+   reaching a log, error, telemetry or prompt). It runs before the AI reviews, so catching a pattern
+   never depends on a model.
 7. **AI code-review gate** — the configured review provider on the diff; block on production-breaking issues or GPL deps
 8. **AI security-review gate** — the configured review provider on the diff; block on injection/authz/SSRF/secrets/**PHI-PII exposure**
+
+## The deterministic data scan (6b)
+
+Rules, not a model: the same diff always gives the same findings, nothing in the diff can talk the
+scan out of a finding, and an auditor can read exactly which checks ran (#70). It backs up stage 8's
+security lens rather than replacing it: rules catch patterns, and the model handles meaning (a real
+name in free text, inferred profiles, over-broad API fields).
+
+| What it finds | How |
+|---|---|
+| Card numbers | 13–19 digits, a real network prefix and length, Luhn-valid, not a published test card |
+| Card security data | Track data, and CVV or PIN-block literals: critical anywhere, tests included |
+| SSNs, Medicare Beneficiary IDs | Valid formats; never-issued ranges and documentation placeholders excluded |
+| Sensitive fields reaching a sink | `log.info(…, patient.getMrn())`, `` console.log(`${user.ssn}`) ``, `raise X(f"{dob}")`: identifier words, not substrings; masked calls skipped |
+| Real-looking emails in tests or seed data | Reported, never blocking; `example.com`, `.gov`, role and placeholder addresses excluded |
+
+- **Languages:** sink rules for Java/Kotlin, TypeScript/JavaScript (Angular, React, Node), Python, Go
+  and C#, plus a generic fallback. Card and identifier patterns are language-independent.
+- **Scoped by the profile:** only the data classes the profile's families declare are scanned. No
+  profile means the strict PHI/PII default.
+- **Severity by where it lands:** in a log, error, telemetry or prompt call → critical; in code, test
+  data or seed data → high; in docs → medium. Critical and high block.
+- **Accepted findings** go in `.sdlc/data-scan-allow.yaml`, one entry per path glob (and optionally a
+  rule), each with a **reason**. An entry without a reason makes the scan fail.
+- **Fails closed:** an unreadable profile or allowlist, or a failed `git diff`, blocks the push.
+- **Findings never repeat the value:** card numbers and IDs are masked in output and evidence.
+- `--all` scans every tracked file (use it once when adopting); `--evidence <file>` writes JSON for
+  `op-validate`.
+
+Measured on the `opuspopuli` monorepo (2,084 files, 451k lines): with every data class on, 0 blocking
+findings and 26 non-blocking reports, all of them emails reaching a log call that the repo's
+`SecureLogger` masks, which is one allowlist entry.
 
 ## The AI review stages (7–8): provider-neutral and fail-closed
 
@@ -59,12 +96,14 @@ dependencies, unit-tested for every row above. Vendor it into the consuming repo
 Add these stages to `.husky/pre-push` in the consuming repo. The reference implementation lives in the
 `opuspopuli` monorepo's `.husky/pre-push`; copy it and adjust package-manager commands per repo.
 
-For stages 7–8, set the provider once and call the vendored runner for each lens:
+Vendor `data-scan.ts` and `review-gate.ts` into the consuming repo (for example `scripts/`). Stage 6b,
+then stages 7–8:
 
 ```sh
 # .husky/pre-push (stages 7-8)
 PROVIDER="${SDLC_REVIEW_PROVIDER:-codex}"   # or claude
 BASE="origin/$(git remote show origin | sed -n 's/.*HEAD branch: //p')"
+node --experimental-strip-types scripts/data-scan.ts --base "$BASE" || exit 1
 node --experimental-strip-types scripts/review-gate.ts --provider "$PROVIDER" --lens code --base "$BASE" || exit 1
 node --experimental-strip-types scripts/review-gate.ts --provider "$PROVIDER" --lens security --base "$BASE" || exit 1
 ```
@@ -104,7 +143,7 @@ PR. See [`controls/README.md`](../controls/README.md) for the individual checks.
 
 ---
 
-**Controls implemented:** `CTL-HIPAA-001` (PHI gate runs on every push), `CTL-SOC2-001` (change management — the enforced gate), `CTL-PCI-001` (cardholder data lens on every push), `CTL-PCI-002` (code and security review before release), `CTL-PCI-003` (dependency, filesystem and secret scans block on high/critical).
+**Controls implemented:** `CTL-HIPAA-001` (PHI gate runs on every push, deterministic data scan plus the AI lens), `CTL-CCPA-001` (California personal information scanned at push time), `CTL-SOC2-001` (change management — the enforced gate), `CTL-PCI-001` (cardholder data lens on every push), `CTL-PCI-002` (code and security review before release), `CTL-PCI-003` (dependency, filesystem and secret scans block on high/critical).
 
 Declared in [`controls/registry.yaml`](../controls/registry.yaml) under each control's
 `implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
