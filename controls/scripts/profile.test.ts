@@ -1,8 +1,19 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { loadRegistry } from "./registry.ts";
-import { resolveProfile, validateProfile, loadProfile, NO_PROFILE, EXAMPLE_PROFILES_DIR } from "./profile.ts";
-import { join } from "node:path";
+import {
+  resolveProfile,
+  validateProfile,
+  loadProfile,
+  findProfile,
+  NO_PROFILE,
+  EXAMPLE_PROFILES_DIR,
+  PROFILE_PATH,
+  LEGACY_PROFILE_PATH,
+} from "./profile.ts";
+import { join, dirname } from "node:path";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 
 const reg = loadRegistry();
 
@@ -73,4 +84,63 @@ test("the Opus Populi example profile now validates with no warnings (CCPA contr
 test("resolve partitions every control into exactly active or inert", () => {
   const r = resolveProfile(reg, { version: 1, families: ["soc2"] });
   assert.equal(r.activeControls.length + r.inertControls.length, reg.controls.length);
+});
+
+// findProfile (#56). Fixtures live in a temp dir, never the working tree (see the note on
+// reconcileImplementedBy in reconcile.ts for why that matters).
+function repoWith(paths: string[]): string {
+  const root = mkdtempSync(join(tmpdir(), "sdlc-profile-"));
+  for (const p of paths) {
+    mkdirSync(dirname(join(root, p)), { recursive: true });
+    writeFileSync(join(root, p), "version: 1\nfamilies: [soc2]\n");
+  }
+  return root;
+}
+
+test("findProfile prefers the agent-neutral .sdlc/ path", () => {
+  const root = repoWith([PROFILE_PATH]);
+  try {
+    const loc = findProfile(root);
+    assert.equal(loc.source, "canonical");
+    assert.equal(loc.path, join(root, PROFILE_PATH));
+    assert.deepEqual(loc.notices, []);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("findProfile still reads the legacy .claude/ path, and says it is deprecated", () => {
+  const root = repoWith([LEGACY_PROFILE_PATH]);
+  try {
+    const loc = findProfile(root);
+    assert.equal(loc.source, "legacy");
+    assert.equal(loc.path, join(root, LEGACY_PROFILE_PATH));
+    assert.ok(loc.notices.some((n) => /deprecated/.test(n) && n.includes(PROFILE_PATH)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("findProfile: with both present the canonical file wins and the duplicate is reported", () => {
+  const root = repoWith([PROFILE_PATH, LEGACY_PROFILE_PATH]);
+  try {
+    const loc = findProfile(root);
+    assert.equal(loc.source, "canonical");
+    assert.ok(loc.notices.some((n) => /ignored/.test(n)));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("findProfile with no profile returns none, so the NO_PROFILE default applies", () => {
+  const root = repoWith([]);
+  try {
+    assert.deepEqual(findProfile(root), { path: null, source: "none", notices: [] });
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test("the canonical profile path belongs to no agent runtime", () => {
+  assert.ok(!PROFILE_PATH.startsWith(".claude/") && !PROFILE_PATH.startsWith(".agents/"));
 });

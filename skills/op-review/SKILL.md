@@ -18,7 +18,7 @@ Where useful, spawn parallel subagents (one per lens) so each looks with fresh e
 - **Security** — injection, auth/HMAC/CSRF bypass, SSRF, over-exposed data in GraphQL resolvers
 - **Regulated-data handling** — does any regulated data reach logs, error messages, prompts, fixtures, seed
   data, or an over-broad GraphQL field? Is field-level access appropriately restricted? Scope this lens to
-  the data classes the repo's compliance profile makes active (`.claude/compliance-profile.yaml`) — PHI/PII
+  the data classes the repo's compliance profile makes active (`.sdlc/compliance-profile.yaml`, or the deprecated `.claude/` copy) — PHI/PII
   when `hipaa` is declared, CCPA personal information when `us-state-privacy` is declared, and so on. With
   no profile, default to the strict PHI/PII lens. (See `/op-data-scan`.)
 - **Performance** — N+1 queries, missing indexes, large payloads

@@ -15,7 +15,7 @@ Create a detailed implementation plan for GitHub issue #$ARGUMENTS.
    - Any GraphQL schema or resolver changes (flag federation impact)
    - Test coverage needed
 4. **Data classification** (scoped to the repo's compliance profile): state whether this change
-   touches any regulated data class the profile (`.claude/compliance-profile.yaml`) makes active —
+   touches any regulated data class the profile (`.sdlc/compliance-profile.yaml`, or the deprecated `.claude/` copy) makes active —
    PHI/PII under `hipaa`, CCPA personal information under `us-state-privacy`, EU personal data under
    `gdpr`; with no profile, treat PHI/PII as the strict default. If yes, note the data flow and where
    it is stored, logged, or sent to a model. Flag any path that would put regulated data into logs,

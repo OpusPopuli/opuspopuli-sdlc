@@ -96,7 +96,7 @@ rather than trusted (#41).
 
 ## Compliance profiles (how a consuming repo scopes coverage)
 
-A consuming repo declares a profile (conventionally `.claude/compliance-profile.yaml`, validated
+A consuming repo declares a profile (at `.sdlc/compliance-profile.yaml`, validated
 against [`controls/schema/compliance-profile.schema.json`](../controls/schema/compliance-profile.schema.json))
 naming the framework **families** that apply to it. Controls whose family is not declared are
 **inert** for that repo — no gate, no scan category, no evidence obligation.
@@ -164,7 +164,7 @@ Single-language **TypeScript**, run via Node's native type-stripping (Node ≥ 2
 
 1. Install the plugin (see the README for the current `/plugin` commands) so the `op-*` skills are
    available in Claude Code.
-2. Add `.claude/compliance-profile.yaml` declaring the framework families that apply to you (start
+2. Add `.sdlc/compliance-profile.yaml` (formerly `.claude/`; the old path is a deprecated fallback) declaring the framework families that apply to you (start
    from an example in [`controls/examples/`](../controls/examples/)). Everything outside your
    profile stays inert.
 3. Install the pre-push gate ([`hooks/pre-push-gate.md`](../hooks/pre-push-gate.md)) so the

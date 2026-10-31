@@ -1,5 +1,5 @@
 # Worked example — the Opus Populi launch profile.
-# Copy to .claude/compliance-profile.yaml in the consuming repo.
+# Copy to .sdlc/compliance-profile.yaml in the consuming repo.
 #
 # Opus Populi launches CCPA-only (inaugural region: California) plus SOC 2 change management.
 # With this profile, the regulated-data scan applies California personal-information categories
