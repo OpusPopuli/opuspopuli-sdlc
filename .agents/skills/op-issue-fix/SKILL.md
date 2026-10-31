@@ -3,7 +3,7 @@ name: op-issue-fix
 description: Fix the bug described in a GitHub issue with a minimal, well-tested change. Use for scoped bug fixes.
 ---
 
-<!-- GENERATED from skills/op-issue-fix/SKILL.md (opuspopuli-sdlc v0.5.0) by
+<!-- GENERATED from skills/op-issue-fix/SKILL.md (opuspopuli-sdlc v0.5.1) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number>`. Codex has no argument substitution: take `{input}`

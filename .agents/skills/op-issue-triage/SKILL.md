@@ -3,7 +3,7 @@ name: op-issue-triage
 description: Triage all open unlabeled issues — classify, size, prioritize against the current milestone. Use to groom the backlog.
 ---
 
-<!-- GENERATED from skills/op-issue-triage/SKILL.md (opuspopuli-sdlc v0.5.0) by
+<!-- GENERATED from skills/op-issue-triage/SKILL.md (opuspopuli-sdlc v0.5.1) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Fetch all open, unlabeled issues from this repository using the GitHub MCP.

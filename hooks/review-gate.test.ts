@@ -8,6 +8,7 @@ import {
   providerCommand,
   parseArgs,
   buildPrompt,
+  criteriaPath,
   type ExecOutcome,
   type Executor,
 } from "./review-gate.ts";
@@ -116,4 +117,34 @@ test("argument parsing rejects an unknown provider, lens, or timeout", () => {
     timeoutS: 300,
     evidence: undefined,
   });
+});
+
+test("repo-specific criteria are added after the base lens and before the response format", () => {
+  const p = buildPrompt("code", "+x", null, "Flag breaking GraphQL schema changes.");
+  const base = p.indexOf("production-breaking");
+  const extra = p.indexOf("Flag breaking GraphQL schema changes.");
+  const format = p.indexOf("Respond with ONLY a JSON object");
+  assert.ok(base >= 0 && base < extra && extra < format);
+});
+
+test("no or empty criteria leave the prompt unchanged", () => {
+  const plain = buildPrompt("security", "+x", null);
+  assert.equal(buildPrompt("security", "+x", null, null), plain);
+  assert.equal(buildPrompt("security", "+x", null, "  \n"), plain);
+  assert.doesNotMatch(plain, /repo-specific/);
+});
+
+test("criteria live at .sdlc/review/<lens>.md", () => {
+  assert.equal(criteriaPath("code"), ".sdlc/review/code.md");
+  assert.equal(criteriaPath("security"), ".sdlc/review/security.md");
+});
+
+test("runReview passes the criteria to the provider", () => {
+  let seen = "";
+  const exec: Executor = (_cmd, stdin) => {
+    seen = stdin;
+    return ok(PASS);
+  };
+  runReview({ provider: "codex", lens: "code", diff: "+x", profile: null, criteria: "No GPL deps.", timeoutMs: 1000 }, exec);
+  assert.ok(seen.includes("No GPL deps."));
 });
