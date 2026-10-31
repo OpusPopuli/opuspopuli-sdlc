@@ -3,7 +3,7 @@ name: op-issue-implement
 description: Implement a feature from an approved plan, subtask by subtask, with review gates. Use to build out a planned feature.
 ---
 
-<!-- GENERATED from skills/op-issue-implement/SKILL.md (opuspopuli-sdlc v0.5.0) by
+<!-- GENERATED from skills/op-issue-implement/SKILL.md (opuspopuli-sdlc v0.5.1) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number>`. Codex has no argument substitution: take `{input}`

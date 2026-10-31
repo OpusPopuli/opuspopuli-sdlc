@@ -3,7 +3,7 @@ name: op-security
 description: Run a local security scan (dependency CVEs, filesystem, secrets) and triage findings. Use before PR prep or release.
 ---
 
-<!-- GENERATED from skills/op-security/SKILL.md (opuspopuli-sdlc v0.5.0) by
+<!-- GENERATED from skills/op-security/SKILL.md (opuspopuli-sdlc v0.5.1) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Run a local security scan on the current repository.

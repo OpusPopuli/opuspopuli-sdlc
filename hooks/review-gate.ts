@@ -65,10 +65,18 @@ const LENS_INSTRUCTIONS: Record<Lens, string> = {
     "Synthetic/faker data is fine.",
 };
 
-export function buildPrompt(lens: Lens, diff: string, profile: string | null): string {
+// Optional repo-specific criteria for a lens: .sdlc/review/<lens>.md. They ADD to the built-in lens
+// (a repo's API contracts, licence rules, threat model); they cannot remove the base checks or change
+// the response format, which come before and after them in the prompt.
+export const criteriaPath = (lens: Lens) => `.sdlc/review/${lens}.md`;
+
+export function buildPrompt(lens: Lens, diff: string, profile: string | null, criteria: string | null = null): string {
   return [
     LENS_INSTRUCTIONS[lens],
     "",
+    ...(criteria === null || criteria.trim() === ""
+      ? []
+      : ["Also check these repo-specific criteria:", criteria.trim(), ""]),
     profile === null
       ? "Compliance profile: none declared."
       : `Compliance profile:\n\`\`\`yaml\n${profile.trim()}\n\`\`\``,
@@ -199,6 +207,7 @@ export interface Options {
   lens: Lens;
   diff: string;
   profile: string | null;
+  criteria?: string | null;
   timeoutMs: number;
 }
 
@@ -213,7 +222,7 @@ export function runReview(opts: Options, exec: Executor = spawnExecutor): Decisi
     const schemaFile = join(dir, "schema.json");
     writeFileSync(schemaFile, JSON.stringify(RESULT_SCHEMA));
     const cmd = providerCommand(opts.provider, outFile, schemaFile);
-    const outcome = exec(cmd, buildPrompt(opts.lens, opts.diff, opts.profile), opts.timeoutMs, outFile);
+    const outcome = exec(cmd, buildPrompt(opts.lens, opts.diff, opts.profile, opts.criteria ?? null), opts.timeoutMs, outFile);
     return decide(opts.provider, outcome);
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -259,6 +268,7 @@ if (isMain) {
     lens: args.lens,
     diff: diff.stdout,
     profile: readProfile(),
+    criteria: existsSync(criteriaPath(args.lens)) ? readFileSync(criteriaPath(args.lens), "utf8") : null,
     timeoutMs: args.timeoutS * 1000,
   });
   for (const f of decision.result?.findings ?? []) {

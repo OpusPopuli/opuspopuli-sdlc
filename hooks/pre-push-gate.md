@@ -27,6 +27,9 @@ Stages 7–8 run through one interface, whichever coding agent the team uses (#5
 3. Invoke the configured **review provider** (`claude` or `codex`) non-interactively, read-only.
 4. Normalize its answer to `{verdict, findings[{severity, file, line, message}]}`.
 5. Apply the blocking policy: any `critical` or `high` finding, or a `block` verdict, blocks.
+   Repo-specific criteria (API contracts, licence rules, a threat model) go in
+   `.sdlc/review/code.md` and `.sdlc/review/security.md`; the runner adds them to that lens. They
+   extend the built-in checks and cannot remove them or change the response format.
 6. Optionally write the decision as JSON evidence for `op-validate`'s release pack.
 
 **The gate fails closed.** A review that did not complete is a failed gate, not a pass:

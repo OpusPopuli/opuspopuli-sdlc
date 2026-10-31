@@ -3,7 +3,7 @@ name: op-data-scan
 description: Scan the repo or diff for regulated data (PHI/PII, and other categories per the repo's compliance profile) leaking into code, logs, fixtures, prompts, or seed data. Use before PR prep and release on any change touching personal data.
 ---
 
-<!-- GENERATED from skills/op-data-scan/SKILL.md (opuspopuli-sdlc v0.5.0) by
+<!-- GENERATED from skills/op-data-scan/SKILL.md (opuspopuli-sdlc v0.5.1) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** (none — scans the current diff by default; pass "full" to scan the whole tree). Codex has no argument substitution: take `{input}`
