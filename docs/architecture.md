@@ -13,7 +13,9 @@ follows), a repo-side enforcement **hook**, a machine-readable **control registr
 
 ```
 opuspopuli-sdlc/
-├── skills/                     # 18 op-* lifecycle skills (intake → operate), one SKILL.md each
+├── skills/                     # 18 op-* lifecycle skills (intake → operate), one SKILL.md each — the source
+├── .agents/skills/             # GENERATED Codex copies of skills/ (npm run skills:generate; never edit)
+├── templates/codex/AGENTS.md   # AGENTS.md template for consuming repos on Codex
 ├── hooks/pre-push-gate.md      # the enforcement gate consuming repos install as a git hook
 ├── hooks/review-gate.ts        # fail-closed AI review runner (claude | codex) for gate stages 7–8
 ├── controls/
@@ -157,14 +159,16 @@ Single-language **TypeScript**, run via Node's native type-stripping (Node ≥ 2
 | `npm run profile:check` | Validate a compliance profile against the registry |
 | `npm run pin` | Fetch sources and write pins (network). `-- <CTL-ID> --repin` re-fetches an already-pinned control |
 | `npm run drift:check` / `drift:dry-run` | Compare live sources to pins; file issues / print only. `-- --include-manual` also fetches `auto_poll: false` sources and verifies their `asserts` |
+| `npm run skills:generate` / `skills:check` | Regenerate the Codex skills in `.agents/skills/` / fail if they are stale |
 | `npm run registry:format` | Rewrite the registry in canonical minimal-diff form |
 | `npm test` | Run the `node:test` suites in `controls/scripts/` and `hooks/` (offline) |
-| `npm run check` | The CI gate: validate + docs:check + reconcile + profile:check + test |
+| `npm run check` | The CI gate: validate + docs:check + reconcile + profile:check + skills:check + test |
 
 ## Adopting it in your own repo
 
 1. Install the plugin (see the README for the current `/plugin` commands) so the `op-*` skills are
-   available in Claude Code.
+   available in Claude Code. On Codex, copy `.agents/skills/op-*` and `templates/codex/AGENTS.md` into
+   the repo instead (README, "Using Codex").
 2. Add `.sdlc/compliance-profile.yaml` (formerly `.claude/`; the old path is a deprecated fallback) declaring the framework families that apply to you (start
    from an example in [`controls/examples/`](../controls/examples/)). Everything outside your
    profile stays inert.
