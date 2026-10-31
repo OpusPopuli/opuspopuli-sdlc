@@ -3,7 +3,7 @@ name: op-review
 description: Multi-lens code review of the current diff, with separation-of-duties and PHI-exposure checks. Use before opening or merging a PR.
 ---
 
-<!-- GENERATED from skills/op-review/SKILL.md (opuspopuli-sdlc v0.5.1) by
+<!-- GENERATED from skills/op-review/SKILL.md (opuspopuli-sdlc v0.6.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Review the current staged changes, or the diff against the repository's base branch.
