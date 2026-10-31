@@ -17,7 +17,7 @@
     "drift:check": "node --experimental-strip-types controls/scripts/check-upstream.ts",
     "drift:dry-run": "node --experimental-strip-types controls/scripts/check-upstream.ts --dry-run",
     "registry:format": "node --experimental-strip-types controls/scripts/format-registry.ts",
-    "test": "node --experimental-strip-types --test \"controls/scripts/*.test.ts\"",
+    "test": "node --experimental-strip-types --test \"controls/scripts/*.test.ts\" \"hooks/*.test.ts\"",
     "check": "npm run validate && npm run docs:check && npm run reconcile && npm run profile:check && npm test"
   },
   "devDependencies": {
