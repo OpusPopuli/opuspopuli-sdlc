@@ -32,7 +32,7 @@ test("Opus Populi profile activates CCPA + SOC 2 controls, leaves HIPAA/Part 11/
   }
   // Every HIPAA, Part 11, GxP, and ISO control is inert.
   const inertIds = new Set(r.inertControls.map((c) => c.id));
-  for (const id of ["CTL-HIPAA-001", "CTL-HIPAA-002", "CTL-P11-001", "CTL-P11-002", "CTL-CSA-001", "CTL-AIQ-001", "CTL-ISO-001"]) {
+  for (const id of ["CTL-HIPAA-001", "CTL-HIPAA-002", "CTL-HIPAA-004", "CTL-HIPAA-005", "CTL-HIPAA-006", "CTL-P11-001", "CTL-P11-002", "CTL-CSA-001", "CTL-AIQ-001", "CTL-ISO-001"]) {
     assert.ok(inertIds.has(id), `${id} should be inert for the CCPA-only profile`);
   }
   // No HIPAA control leaks into the active set.
@@ -143,4 +143,12 @@ test("findProfile with no profile returns none, so the NO_PROFILE default applie
 
 test("the canonical profile path belongs to no agent runtime", () => {
   assert.ok(!PROFILE_PATH.startsWith(".claude/") && !PROFILE_PATH.startsWith(".agents/"));
+});
+
+// HITECH (#65): the breach-readiness, encryption and business-associate controls ride the hipaa family.
+test("a HIPAA profile activates the HITECH controls", () => {
+  const r = resolveProfile(reg, { version: 1, families: ["hipaa"] });
+  const ids = new Set(r.activeControls.map((c) => c.id));
+  for (const id of ["CTL-HIPAA-004", "CTL-HIPAA-005", "CTL-HIPAA-006"]) assert.ok(ids.has(id), id);
+  assert.equal(reg.frameworks.hipaa.label, "HIPAA / HITECH");
 });

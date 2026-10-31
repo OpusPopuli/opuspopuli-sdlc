@@ -3,7 +3,7 @@ name: op-pr-prep
 description: Prepare the current branch for a pull request — checks, PR description, reviewers, compliance artifacts. Use right before opening a PR.
 ---
 
-<!-- GENERATED from skills/op-pr-prep/SKILL.md (opuspopuli-sdlc v0.5.1) by
+<!-- GENERATED from skills/op-pr-prep/SKILL.md (opuspopuli-sdlc v0.6.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Prepare the current branch for a pull request.

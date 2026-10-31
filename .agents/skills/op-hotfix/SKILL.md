@@ -3,7 +3,7 @@ name: op-hotfix
 description: Production hotfix — minimal blast radius, with an incident record and a follow-up backlog loop. Use for urgent production fixes.
 ---
 
-<!-- GENERATED from skills/op-hotfix/SKILL.md (opuspopuli-sdlc v0.5.1) by
+<!-- GENERATED from skills/op-hotfix/SKILL.md (opuspopuli-sdlc v0.6.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<symptom description>`. Codex has no argument substitution: take `{input}`
@@ -32,6 +32,23 @@ This is a priority path — minimize blast radius, maximize speed.
 9. **Data-exposure check**: if the incident touched PHI/PII (leaked, mis-routed, over-exposed in a
    response or log), say so explicitly — it may be a reportable event, not just a bug. Flag it for me.
 
+   **When the profile declares `hipaa` and PHI was involved**, an impermissible use or disclosure is
+   *presumed* a breach under HITECH, and notice to individuals is due within 60 days of discovery. Do not
+   decide whether it is a breach — that is a privacy/legal call. Record the facts the decision needs, now,
+   in the incident summary and the change record, under a **Breach assessment input** heading:
+   - **Discovered:** the date and time anyone on the team first knew (the 60-day clock starts here,
+     not when the fix ships)
+   - **PHI involved:** which identifiers and record types, and roughly how many individuals
+   - **Secured?** whether the exposed PHI was encrypted to the HHS standard (if so, it may not be
+     "unsecured PHI"); say "unknown" rather than guess
+   - **The four factors**, from what engineering can see: (i) nature and extent of the PHI and
+     likelihood of re-identification, (ii) who received or used it, (iii) whether it was actually
+     acquired or viewed (logs, access records), (iv) what was done to mitigate
+   - **Handed to:** who received this for the breach determination, and when
+
+   Mark it unresolved until a named person records the determination. A missing assessment is an
+   exception in the next `$op-validate`.
+
 **After merge — close the loop (do NOT skip; this is the production→backlog feedback path):**
 
 10. Draft the incident summary comment to post on the related issue (timeline, cause, fix, blast radius)
@@ -45,7 +62,7 @@ Speed matters but correctness matters more — flag me if you're uncertain.
 
 ---
 
-**Controls implemented:** `CTL-CCPA-003` (reasonable security and breach liability — a breach becomes an incident record with the follow-up backlog loop).
+**Controls implemented:** `CTL-CCPA-003` (reasonable security and breach liability — a breach becomes an incident record with the follow-up backlog loop), `CTL-HIPAA-004` (HITECH breach readiness — the incident record carries the four-factor breach-assessment input and the discovery date).
 
 Declared in [`controls/registry.yaml`](../../../controls/registry.yaml) under each control's
 `implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either

@@ -3,7 +3,7 @@ name: op-ci
 description: Check GitHub Actions status for the current branch, diagnose failures, and classify them. Use to see if CI is green before merging.
 ---
 
-<!-- GENERATED from skills/op-ci/SKILL.md (opuspopuli-sdlc v0.5.1) by
+<!-- GENERATED from skills/op-ci/SKILL.md (opuspopuli-sdlc v0.6.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Check GitHub Actions status for the current branch using the GitHub MCP.

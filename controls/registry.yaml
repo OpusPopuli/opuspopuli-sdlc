@@ -43,7 +43,7 @@ profiles:
 # scan looks for. Packs extend this: #8 adds ca-personal-information to us-state-privacy, #7 adds
 # eu-personal-data to gdpr.
 frameworks:
-  hipaa: { label: HIPAA, sort: 1, data_classes: [ phi-pii ] }
+  hipaa: { label: HIPAA / HITECH, sort: 1, data_classes: [ phi-pii ] }
   soc2: { label: SOC 2, sort: 2, data_classes: [] }
   part11: { label: 21 CFR Part 11, sort: 3, data_classes: [] }
   gxp-csa: { label: Part 11 / GxP (CSA), sort: 4, data_classes: [] }
@@ -131,6 +131,112 @@ controls:
     evidence:
       - docs/compliance/changes/*-change-record.md
     status: active
+
+  - id: CTL-HIPAA-004
+    title: Breach readiness — an incident touching PHI is recorded with what the four-factor breach assessment needs
+    description: >-
+      HITECH Breach Notification Rule. An impermissible use or disclosure of PHI is presumed a breach unless a risk assessment of at least four factors shows a low probability of compromise (§164.402), notice to individuals is due without unreasonable delay and within 60 days of discovery (§164.404), and the covered entity or business associate carries the burden of proof (§164.414). The SDLC does not decide whether an incident is a breach — that is a privacy/legal determination. It makes sure the incident record captures the facts the determination needs (discovery date, PHI involved, whether it was secured, the four factors) at the moment engineering knows them, so the 60-day clock is not discovered late.
+    family: hipaa
+    jurisdiction: us
+    applicability: [ us-phi ]
+    citations:
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.402"
+        note: Definitions — breach (the four risk-assessment factors) and unsecured PHI
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.404"
+        note: Notification to individuals — 60 days from discovery; when a breach is treated as discovered
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.414"
+        note: Burden of proof rests with the covered entity or business associate
+    implemented_by:
+      - type: skill
+        ref: op-hotfix
+        note: the incident record carries the breach-assessment facts and hands the determination to a human
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: pin-pending
+
+  - id: CTL-HIPAA-005
+    title: Encryption safe harbor — PHI is stored and transmitted encrypted to the HHS-specified standard
+    description: >-
+      PHI rendered unusable, unreadable, or indecipherable by a method in HHS's guidance is not "unsecured PHI" (§164.402), so its loss or theft is not a notifiable breach. The guidance names NIST SP 800-111 for data at rest and NIST SP 800-52 (TLS) and related VPN guidance for data in motion. Planning records how a change stores and transmits PHI; review blocks a new PHI store or transport that is not encrypted. Key management and the infrastructure encryption itself are the consuming application's architecture.
+    family: hipaa
+    jurisdiction: us
+    applicability: [ us-phi ]
+    citations:
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.402"
+        note: Definition of unsecured protected health information
+      - adapter: document
+        name: HHS — Guidance to Render Unsecured PHI Unusable, Unreadable, or Indecipherable to Unauthorized Individuals
+        url: https://www.hhs.gov/hipaa/for-professionals/breach-notification/guidance/index.html
+        normalization: text
+        asserts:
+          title: Guidance to Render Unsecured Protected Health Information Unusable, Unreadable, or Indecipherable to Unauthorized Individuals
+        note: Specifies the encryption (NIST SP 800-111 at rest; SP 800-52/800-77/800-113 in motion) and destruction (SP 800-88) methods that take PHI out of "unsecured". Page states content last reviewed 2013-07-26.
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.312"
+        cadence: quarterly # velocity: 1 amendment ever (2016-12-30)
+        note: Technical safeguards — encryption at rest (a)(2)(iv) and in transmission (e)(2)(ii)
+        pinned:
+          amendment_date: 2016-12-30
+          checked: 2026-07-30
+    implemented_by:
+      - type: skill
+        ref: op-issue-plan
+        note: data classification records how PHI touched by the change is stored and transmitted
+      - type: skill
+        ref: op-review
+        note: a new PHI store or transport that is not encrypted is a blocker
+      - type: architecture
+        ref: consuming-app-encryption
+        note: storage/transport encryption and key management are the consuming app's infrastructure
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: pin-pending
+
+  - id: CTL-HIPAA-006
+    title: Business associates — a third party that will receive PHI is identified at plan time and covered by a BAA
+    description: >-
+      Since HITECH, business associates are directly liable under the Security Rule, and a covered entity may let a business associate create, receive, maintain, or transmit ePHI only under a business associate agreement meeting §164.314(a). The SDLC touchpoint is the moment a change introduces a new recipient of PHI — an API, SaaS, hosted model, logging or analytics vendor. Planning names it and states whether a BAA is in place; review blocks the merge if one is needed and not confirmed. Executing the BAA is a contractual control outside the SDLC.
+    family: hipaa
+    jurisdiction: us
+    applicability: [ us-phi ]
+    citations:
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.308"
+        note: Administrative safeguards — (b) business associate contracts and other arrangements
+      - adapter: ecfr
+        cfr_title: 45
+        cfr_part: "164"
+        cfr_section: "164.314"
+        note: Organizational requirements — (a) business associate contract terms
+    implemented_by:
+      - type: skill
+        ref: op-issue-plan
+        note: names any new third-party recipient of PHI and whether a BAA covers it
+      - type: skill
+        ref: op-review
+        note: blocks a new PHI recipient with no confirmed BAA
+      - type: architecture
+        ref: business-associate-agreements
+        note: executing and tracking BAAs is a contractual control
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: pin-pending
 
   - id: CTL-SOC2-001
     title: Change management — plan, independent review, enforced gate, recorded change

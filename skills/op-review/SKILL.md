@@ -21,6 +21,10 @@ Where useful, spawn parallel subagents (one per lens) so each looks with fresh e
   the data classes the repo's compliance profile makes active (`.sdlc/compliance-profile.yaml`, or the deprecated `.claude/` copy) — PHI/PII
   when `hipaa` is declared, CCPA personal information when `us-state-privacy` is declared, and so on. With
   no profile, default to the strict PHI/PII lens. (See `/op-data-scan`.)
+  When `hipaa` is declared, also block on: a new store or transport of PHI that is not encrypted (at rest,
+  and TLS in transit; encrypted PHI is outside HITECH's "unsecured PHI"), and a new third party that will
+  receive PHI (API, SaaS, hosted model, logging or analytics vendor) with no confirmed business associate
+  agreement.
 - **Performance** — N+1 queries, missing indexes, large payloads
 - **TypeScript strictness** — no implicit `any`, proper typing
 - **Test coverage** — are the important paths (including the regulated-data paths) tested?
@@ -36,7 +40,7 @@ Note the author/reviewer identities at the top so `/op-change-record` can captur
 
 ---
 
-**Controls implemented:** `CTL-HIPAA-002` (runtime data residency — verifies changes don't send regulated data to a third-party runtime service), `CTL-HIPAA-003` (access to PHI restricted and reviewed at the API surface), `CTL-SOC2-001` (change management — independent review), `CTL-SOD-001` (separation of duties), `CTL-CCPA-002` (consumer rights preserved), `CTL-CCPA-003` (reasonable security).
+**Controls implemented:** `CTL-HIPAA-002` (runtime data residency — verifies changes don't send regulated data to a third-party runtime service), `CTL-HIPAA-003` (access to PHI restricted and reviewed at the API surface), `CTL-SOC2-001` (change management — independent review), `CTL-SOD-001` (separation of duties), `CTL-CCPA-002` (consumer rights preserved), `CTL-CCPA-003` (reasonable security), `CTL-HIPAA-005` (encryption safe harbor — unencrypted new PHI stores or transports are blockers), `CTL-HIPAA-006` (business associates — a new PHI recipient without a confirmed BAA is a blocker).
 
 Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
 `implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
