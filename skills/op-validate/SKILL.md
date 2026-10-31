@@ -8,7 +8,8 @@ Assemble the validation evidence pack for release $ARGUMENTS — the "binder" an
 the Part 11 / GxP computer-software-assurance idea applied lightly: show that everything in this release
 was planned, reviewed, tested, verified, and screened for regulated-data exposure, with evidence.
 
-**Scope to the repo's compliance profile.** Read `.claude/compliance-profile.yaml` (see
+**Scope to the repo's compliance profile.** Read `.sdlc/compliance-profile.yaml` (or the deprecated
+`.claude/compliance-profile.yaml`, and record in the header that it should be moved; see
 `controls/README.md` in the `opuspopuli-sdlc` plugin) and record which framework families are active.
 The pack's framework-specific sections (HIPAA, Part 11, GxP, privacy) are included only for active
 families; sections for inactive families are omitted with a one-line "not in scope for this repo's

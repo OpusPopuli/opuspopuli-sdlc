@@ -9,8 +9,10 @@ Run a regulated-data exposure scan. Default scope is the current diff against th
 
 ## Scope the scan to the repo's compliance profile
 
-First read the consuming repo's compliance profile (`.claude/compliance-profile.yaml`; see
-`controls/README.md` in the `opuspopuli-sdlc` plugin). The **active data classes** are the union of
+First read the consuming repo's compliance profile: `.sdlc/compliance-profile.yaml`, or the
+deprecated `.claude/compliance-profile.yaml` if only that exists (say in the output that it should be
+moved; if both exist, use `.sdlc/` and flag the duplicate). See `controls/README.md` in the
+`opuspopuli-sdlc` plugin. The **active data classes** are the union of
 `data_classes` across the profile's declared framework families (as defined in the control
 registry's `frameworks:` map). Apply only the sections below whose data class is active:
 

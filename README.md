@@ -51,6 +51,32 @@ the profile model, the toolchain, and how to adopt it in your own repo — see
 To make a repo install it automatically for everyone, add the marketplace + enabled plugin to the repo's
 `.claude/settings.json` (team config), then commit it.
 
+## Declare your compliance profile
+
+Each consuming repo says which frameworks apply to it in `.sdlc/compliance-profile.yaml`. Families you
+don't declare stay inert: no gates, no scan categories, no evidence obligations.
+
+```yaml
+# .sdlc/compliance-profile.yaml
+version: 1
+repo: my-service
+families: [hipaa, soc2]
+```
+
+Start from an example in [`controls/examples/`](controls/examples/), commit it, and validate it from a
+checkout of this repo:
+
+```
+npm run profile:check -- --repo ../my-service
+```
+
+With no profile, the skills run the framework-agnostic lifecycle and apply the strict PHI/PII lens.
+
+**Upgrading from 0.2.x:** the profile used to live at `.claude/compliance-profile.yaml`. Move it with
+`mkdir -p .sdlc && git mv .claude/compliance-profile.yaml .sdlc/`. The old path still works but is
+reported as deprecated, and if both exist the `.sdlc/` copy wins. The path belongs to no single agent
+runtime, so every coding agent reads the same profile (#56).
+
 ## The compliance angle
 
 Compliance frameworks don't demand different engineering — they demand *provable evidence* that disciplined

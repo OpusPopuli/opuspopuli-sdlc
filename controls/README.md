@@ -68,13 +68,13 @@ Each entry in `controls[]`:
 ## Consuming-repo compliance profiles
 
 A consuming repo declares which framework families apply to it in a **compliance profile**,
-conventionally `.claude/compliance-profile.yaml`, validated against
+at `.sdlc/compliance-profile.yaml`, validated against
 `schema/compliance-profile.schema.json`. Controls whose family is not declared are **inert** for
 that repo — no gate, no scan category, no evidence obligation. This is what lets one repo run a
 lean privacy-only gate while the plugin carries full multi-framework capability.
 
 ```yaml
-# .claude/compliance-profile.yaml — the Opus Populi launch profile (CCPA-only + SOC 2)
+# .sdlc/compliance-profile.yaml — the Opus Populi launch profile (CCPA-only + SOC 2)
 version: 1
 repo: opuspopuli
 families: [us-state-privacy, soc2]
@@ -84,7 +84,8 @@ applicability: [ca-personal-information]
 Worked examples live in [`controls/examples/`](examples/). Validate a profile against the registry:
 
 ```
-npm run profile:check -- .claude/compliance-profile.yaml   # one file
+npm run profile:check -- .sdlc/compliance-profile.yaml     # one file
+npm run profile:check -- --repo .                           # resolve a repo's profile like the skills do
 npm run profile:check                                        # all committed examples (used by CI)
 ```
 

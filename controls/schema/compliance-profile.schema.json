@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/OpusPopuli/opuspopuli-sdlc/controls/schema/compliance-profile.schema.json",
   "title": "OpusPopuli SDLC — consuming-repo compliance profile",
-  "description": "Declared by a consuming repo (conventionally at .claude/compliance-profile.yaml). Selects which control families apply; validate-profile.ts checks it against the registry. A control whose family is not declared here is inert for the repo.",
+  "description": "Declared by a consuming repo at .sdlc/compliance-profile.yaml (the agent-neutral path; .claude/compliance-profile.yaml is a deprecated fallback). Selects which control families apply; validate-profile.ts checks it against the registry. A control whose family is not declared here is inert for the repo.",
   "type": "object",
   "additionalProperties": false,
   "required": ["version", "families"],
