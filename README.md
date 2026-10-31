@@ -23,7 +23,9 @@ control mapping):
 - **Ship** — `op-release`, `op-validate` (release validation pack)
 - **Operate** — `op-hotfix` (incident record + backlog loop)
 
-Plus a repo-side enforcement gate: [`hooks/pre-push-gate.md`](hooks/pre-push-gate.md), and a
+Plus a repo-side enforcement gate: [`hooks/pre-push-gate.md`](hooks/pre-push-gate.md), whose AI review
+stages run on Claude Code or Codex through a fail-closed reference runner
+([`hooks/review-gate.ts`](hooks/review-gate.ts)), and a
 machine-readable **control registry** ([`controls/`](controls/README.md)) that pins every declared
 control to its authoritative source (eCFR, guidance documents, framework clause IDs) with
 provenance — the foundation for CI-enforced drift detection in both directions (issues #3/#4).

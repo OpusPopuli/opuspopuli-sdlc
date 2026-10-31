@@ -15,6 +15,7 @@ follows), a repo-side enforcement **hook**, a machine-readable **control registr
 opuspopuli-sdlc/
 ├── skills/                     # 18 op-* lifecycle skills (intake → operate), one SKILL.md each
 ├── hooks/pre-push-gate.md      # the enforcement gate consuming repos install as a git hook
+├── hooks/review-gate.ts        # fail-closed AI review runner (claude | codex) for gate stages 7–8
 ├── controls/
 │   ├── registry.yaml           # THE control registry — the canonical asset
 │   ├── intended-use.md         # registry preamble: intended use, GxP impact, honesty guardrail
@@ -157,7 +158,7 @@ Single-language **TypeScript**, run via Node's native type-stripping (Node ≥ 2
 | `npm run pin` | Fetch sources and write pins (network). `-- <CTL-ID> --repin` re-fetches an already-pinned control |
 | `npm run drift:check` / `drift:dry-run` | Compare live sources to pins; file issues / print only. `-- --include-manual` also fetches `auto_poll: false` sources and verifies their `asserts` |
 | `npm run registry:format` | Rewrite the registry in canonical minimal-diff form |
-| `npm test` | Run the `node:test` suites (offline) |
+| `npm test` | Run the `node:test` suites in `controls/scripts/` and `hooks/` (offline) |
 | `npm run check` | The CI gate: validate + docs:check + reconcile + profile:check + test |
 
 ## Adopting it in your own repo
