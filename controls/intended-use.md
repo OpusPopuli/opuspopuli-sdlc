@@ -27,8 +27,8 @@ evidence (CSA posture) that consuming systems reference in their own validation.
 
 ## What this system does not claim
 
-Installing this plugin does not make an organization compliant with HIPAA, SOC 2, 21 CFR Part 11,
-or any other framework. Compliance requires policies, training, risk assessments, vendor
+Installing this plugin does not make an organization compliant with HIPAA/HITECH, SOC 2, 21 CFR Part 11,
+CCPA/CPRA, PCI DSS, or any other framework. Compliance requires policies, training, risk assessments, vendor
 agreements, and an actual audit. The artifacts produced here are **audit-ready scaffolding and
 evidence** — describe them as "audit-ready", never "compliant". An evidence pack that hides gaps
 is a finding, not a pass.

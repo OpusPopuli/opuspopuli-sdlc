@@ -1,0 +1,12 @@
+# Worked example — a payments service in scope for PCI DSS.
+# A repo that stores, processes or transmits cardholder data, or can affect the security of the
+# cardholder data environment: the regulated-data scan and the push-time gate look for PANs and
+# sensitive authentication data, review checks payment-page scripts, and change records carry the
+# PCI significant-change reconfirmation. HIPAA, Part 11, GxP and ISO controls stay inert.
+version: 1
+repo: example-payments-service
+families:
+  - pci-dss
+  - soc2
+applicability:
+  - cardholder-data

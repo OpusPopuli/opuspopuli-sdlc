@@ -104,7 +104,8 @@ npm run profile:check                                        # all committed exa
 **Data classes and the scan.** Each `frameworks:` entry may list `data_classes` — the regulated-data
 categories that family brings into scope for `op-data-scan`. The scan applies the union of data
 classes across the profile's declared families (`hipaa → phi-pii`, `us-state-privacy →
-ca-personal-information`; `gdpr → eu-personal-data` arrives with #7).
+ca-personal-information`, `pci-dss → cardholder-data, sensitive-authentication-data`;
+`gdpr → eu-personal-data` arrives with #7).
 
 **Extensible state-privacy family.** The `us-state-privacy` family holds California's CCPA/CPRA
 controls (`CTL-CCPA-*`). It is designed to grow: another state law (e.g. Virginia CDPA, Colorado
@@ -125,7 +126,7 @@ redesign.
 | `ecfr` | US federal regulations (public domain) | latest `amendment_date` for the part/section via the [eCFR Versioner API](https://www.ecfr.gov/developers/documentation/api/v1) | poll for **any** disagreement with the pinned date (#51) |
 | `eurlex` | EU law by CELEX/ELI (freely reusable) — reserved for packs #7/#9 | consolidation date | poll for newer consolidated versions |
 | `document` | Public guidance docs / statute pages | `sha256` + retrieval date; `normalization: raw` (bytes, PDFs) or `text` (markup-stripped, HTML — template churn doesn't fire false alarms) | re-fetch and compare checksum; plus `asserts` / `reverify_days` (below) |
-| `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO/IEC standards) | none — identifier only | none (manual new-edition checks) |
+| `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO/IEC standards, PCI DSS) | none — identifier only | none (manual new-edition checks) |
 
 ### The no-vendoring boundary
 

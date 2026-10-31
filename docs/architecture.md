@@ -59,7 +59,7 @@ redesign. `pin.ts` writes pins; `check-upstream.ts` watches them.
 | `document` | Guidance PDFs / statute pages | URL + `sha256` (`raw` bytes, or `text` = markup-stripped), optionally `asserts` | checksum change; pin age (`reverify_days`); assertion mismatch |
 | `fedreg` | Federal Register dockets | newest document number via the federalregister.gov API | new document on the docket |
 | `eurlex` | EU law by CELEX/ELI | *(reserved for the GDPR pack, #7)* | *(reserved)* |
-| `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO) | not pinned — identifier only | not watched (manual) |
+| `clause` | **Copyrighted** frameworks (GAMP 5, SOC 2 TSC, ISO, PCI DSS) | not pinned — identifier only | not watched (manual) |
 
 `auto_poll: false` marks a `document` source whose host blocks datacenter IPs (e.g. FDA PDFs 404
 from CI runners); the watcher does not fetch it from CI. It is **not** an exemption from checking —
@@ -108,7 +108,8 @@ naming the framework **families** that apply to it. Controls whose family is not
   unit-tested, so inertness is *demonstrable* (e.g. a CCPA-only profile provably activates SOC 2 +
   CCPA and leaves HIPAA/Part 11/GxP inert).
 - Each `frameworks:` entry lists `data_classes`; `op-data-scan` scans for the union across the
-  profile's declared families (`hipaa → phi-pii`, `us-state-privacy → ca-personal-information`, …).
+  profile's declared families (`hipaa → phi-pii`, `us-state-privacy → ca-personal-information`,
+  `pci-dss → cardholder-data, sensitive-authentication-data`).
 - **No profile declared** → framework-agnostic lifecycle only (plans, change records, traceability
   always run), the strict PHI/PII scan lens, and a visible "no compliance profile declared" note.
 

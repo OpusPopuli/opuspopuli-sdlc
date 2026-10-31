@@ -3,7 +3,7 @@ name: op-security
 description: Run a local security scan (dependency CVEs, filesystem, secrets) and triage findings. Use before PR prep or release.
 ---
 
-<!-- GENERATED from skills/op-security/SKILL.md (opuspopuli-sdlc v0.6.0) by
+<!-- GENERATED from skills/op-security/SKILL.md (opuspopuli-sdlc v0.7.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Run a local security scan on the current repository.
@@ -23,9 +23,22 @@ After all scans complete:
 
 Do not suggest proceeding with PR prep until all CRITICAL and HIGH findings are resolved.
 
+**When the profile declares `pci-dss`**, also confirm the component inventory exists for this commit
+(the committed lockfile, or an SBOM if the repo produces one) and name it in the summary, so a later
+advisory can be traced to what it affects.
+
 ## Context (pnpm monorepo)
 
 - Primary package manager: pnpm (workspace monorepo)
 - Fix transitive CVEs via `pnpm.overrides` in the root `package.json`, not by pinning in child packages
 - Fix direct dep CVEs by bumping the version in the relevant `package.json`
 - After adding overrides: run `pnpm install` then re-run `pnpm audit` to verify
+
+---
+
+**Controls implemented:** `CTL-PCI-003` (vulnerabilities identified and patched; bespoke and third-party components inventoried).
+
+Declared in [`controls/registry.yaml`](../../../controls/registry.yaml) under each control's
+`implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either
+direction — the registry cannot claim an artifact implements a control the artifact never
+mentions (#48).

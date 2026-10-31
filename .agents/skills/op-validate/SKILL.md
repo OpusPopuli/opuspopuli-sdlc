@@ -3,7 +3,7 @@ name: op-validate
 description: Assemble the release validation / qualification evidence pack for an auditor (HIPAA-first, CSV/CSA-style). Use at release time to produce the audit binder.
 ---
 
-<!-- GENERATED from skills/op-validate/SKILL.md (opuspopuli-sdlc v0.6.0) by
+<!-- GENERATED from skills/op-validate/SKILL.md (opuspopuli-sdlc v0.7.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<release version, e.g. v1.4.0>`. Codex has no argument substitution: take `{input}`
@@ -16,7 +16,7 @@ was planned, reviewed, tested, verified, and screened for regulated-data exposur
 **Scope to the repo's compliance profile.** Read `.sdlc/compliance-profile.yaml` (or the deprecated
 `.claude/compliance-profile.yaml`, and record in the header that it should be moved; see
 `controls/README.md` in the `opuspopuli-sdlc` plugin) and record which framework families are active.
-The pack's framework-specific sections (HIPAA, Part 11, GxP, privacy) are included only for active
+The pack's framework-specific sections (HIPAA/HITECH, Part 11, GxP, privacy, PCI DSS) are included only for active
 families; sections for inactive families are omitted with a one-line "not in scope for this repo's
 profile" note rather than left blank. Framework-agnostic evidence (plans, change records,
 traceability, test results) is always included. **If no profile is declared, state that plainly in

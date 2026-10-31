@@ -23,6 +23,8 @@ registry's `frameworks:` map). Apply only the sections below whose data class is
   *(detection categories added by #8; until then, apply the PHI/PII section as the nearest
   superset and note the gap)*.
 - **`eu-personal-data` active** (family `gdpr`) → run the GDPR section *(added by #7)*.
+- **`cardholder-data` / `sensitive-authentication-data` active** (family `pci-dss`) → run the
+  payment card section.
 
 Only the active categories are in scope. A repo whose profile does not declare `hipaa` is not
 failed for HIPAA-specific PHI framing — but note that `phi-pii` and `ca-personal-information`
@@ -84,7 +86,24 @@ household data, pseudonymous identifiers, browsing/commercial history, and infer
 *Detection categories are contributed by the GDPR pack (#7), including Article 9 special
 categories. Not yet itemized.*
 
-## Report
+## Payment card data (data classes `cardholder-data`, `sensitive-authentication-data`)
+
+PCI DSS account data. Scan the same sinks as the PHI/PII section (logs & errors, fixtures & seed data,
+prompts, API over-exposure, hardcoded examples), plus analytics, telemetry and error-reporting payloads,
+for:
+
+- **Primary account numbers (PAN)** — 13–19 digit numbers, possibly space- or dash-separated, that pass
+  the Luhn checksum. Published test card numbers (e.g. `4111 1111 1111 1111`) in fixtures are fine;
+  anything else in a fixture, seed file or pre-production config is a finding, because live PANs must
+  not reach pre-production.
+- **Unmasked display** — a full PAN rendered in UI, logs or API responses. At most the BIN (first six
+  or eight digits) and last four may be shown.
+- **Sensitive authentication data (SAD)** — full magnetic-stripe or chip track data, card verification
+  codes (CVV/CVC/CID), PINs and PIN blocks. SAD must not be stored after authorization **even
+  encrypted**: any persistence, log, cache or queue of SAD is **critical**.
+- **Storage** — a new place a PAN is written (database column, cache, file, message queue) that does
+  not render it unreadable (tokenization, truncation, strong encryption, or a keyed hash).
+
 
 6. Group findings by sink and severity (critical = real regulated data to a third party or unmasked
    log; high = real personal data in repo; medium = realistic-looking sample data; low = advisory).
@@ -99,7 +118,7 @@ frameworks (e.g. the HIPAA data-handling control when `hipaa` is declared).
 
 ---
 
-**Controls implemented:** `CTL-HIPAA-001` (PHI never appears in logs, prompts, or fixtures), `CTL-CCPA-001` (personal and sensitive personal information — definitions and handling).
+**Controls implemented:** `CTL-HIPAA-001` (PHI never appears in logs, prompts, or fixtures), `CTL-CCPA-001` (personal and sensitive personal information — definitions and handling), `CTL-PCI-001` (account data — PAN and SAD kept out of code, logs, fixtures, prompts and pre-production).
 
 Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
 `implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either

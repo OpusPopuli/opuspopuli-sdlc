@@ -3,7 +3,7 @@ name: op-issue-plan
 description: Create a detailed, persisted implementation plan for a GitHub issue, with a risk register and data classification. Use when planning work on an issue before implementation.
 ---
 
-<!-- GENERATED from skills/op-issue-plan/SKILL.md (opuspopuli-sdlc v0.6.0) by
+<!-- GENERATED from skills/op-issue-plan/SKILL.md (opuspopuli-sdlc v0.7.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number>`. Codex has no argument substitution: take `{input}`

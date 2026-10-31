@@ -3,7 +3,7 @@ name: op-issue-research
 description: Deeply research a GitHub issue before implementation — codebase, history, hypotheses. Use to understand an issue before planning.
 ---
 
-<!-- GENERATED from skills/op-issue-research/SKILL.md (opuspopuli-sdlc v0.6.0) by
+<!-- GENERATED from skills/op-issue-research/SKILL.md (opuspopuli-sdlc v0.7.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number>`. Codex has no argument substitution: take `{input}`

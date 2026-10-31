@@ -25,6 +25,9 @@ Where useful, spawn parallel subagents (one per lens) so each looks with fresh e
   and TLS in transit; encrypted PHI is outside HITECH's "unsecured PHI"), and a new third party that will
   receive PHI (API, SaaS, hosted model, logging or analytics vendor) with no confirmed business associate
   agreement.
+  When `pci-dss` is declared, also block on: sensitive authentication data persisted anywhere, a PAN shown
+  unmasked or stored readable, and a change that adds, removes or changes a script on a payment page
+  without updating the script inventory and an integrity mechanism (subresource integrity or CSP).
 - **Performance** — N+1 queries, missing indexes, large payloads
 - **TypeScript strictness** — no implicit `any`, proper typing
 - **Test coverage** — are the important paths (including the regulated-data paths) tested?
@@ -40,7 +43,7 @@ Note the author/reviewer identities at the top so `/op-change-record` can captur
 
 ---
 
-**Controls implemented:** `CTL-HIPAA-002` (runtime data residency — verifies changes don't send regulated data to a third-party runtime service), `CTL-HIPAA-003` (access to PHI restricted and reviewed at the API surface), `CTL-SOC2-001` (change management — independent review), `CTL-SOD-001` (separation of duties), `CTL-CCPA-002` (consumer rights preserved), `CTL-CCPA-003` (reasonable security), `CTL-HIPAA-005` (encryption safe harbor — unencrypted new PHI stores or transports are blockers), `CTL-HIPAA-006` (business associates — a new PHI recipient without a confirmed BAA is a blocker).
+**Controls implemented:** `CTL-HIPAA-002` (runtime data residency — verifies changes don't send regulated data to a third-party runtime service), `CTL-HIPAA-003` (access to PHI restricted and reviewed at the API surface), `CTL-SOC2-001` (change management — independent review), `CTL-SOD-001` (separation of duties), `CTL-CCPA-002` (consumer rights preserved), `CTL-CCPA-003` (reasonable security), `CTL-HIPAA-005` (encryption safe harbor — unencrypted new PHI stores or transports are blockers), `CTL-HIPAA-006` (business associates — a new PHI recipient without a confirmed BAA is a blocker), `CTL-PCI-001` (account data handling), `CTL-PCI-002` (secure development — bespoke software reviewed before release), `CTL-PCI-004` (payment-page scripts inventoried, authorized and integrity-checked).
 
 Declared in [`controls/registry.yaml`](../../controls/registry.yaml) under each control's
 `implemented_by`. `npm run reconcile` fails if this list and the registry disagree in either

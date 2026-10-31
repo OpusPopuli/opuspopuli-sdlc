@@ -33,6 +33,7 @@ profiles:
     - gxp-csa
     - iso-medical
     - us-state-privacy
+    - pci-dss
 
 # Display metadata for each family — the single source for the "Framework" column of the
 # generated control-mapping table in docs/compliance-model.md (issue #2). validate.ts fails if a
@@ -49,6 +50,7 @@ frameworks:
   gxp-csa: { label: Part 11 / GxP (CSA), sort: 4, data_classes: [] }
   iso-medical: { label: ISO 62304 / 14971, sort: 5, data_classes: [] }
   us-state-privacy: { label: US state privacy (CCPA/CPRA), sort: 6, data_classes: [ ca-personal-information ] }
+  pci-dss: { label: PCI DSS, sort: 7, data_classes: [ cardholder-data, sensitive-authentication-data ] }
 
 controls:
   - id: CTL-HIPAA-001
@@ -564,4 +566,114 @@ controls:
         ref: subprocessor-agreements
     evidence:
       - docs/compliance/releases/*-validation.md
+    status: active
+
+  - id: CTL-PCI-001
+    title: Account data stays out of code, logs, fixtures, prompts and pre-production; SAD is never stored
+    description: >-
+      Sensitive authentication data (full track data, card verification code, PIN or PIN block) is not retained after authorization, even encrypted; the PAN is masked when displayed (at most the BIN and last four digits) and unreadable wherever stored; live PANs are not used in pre-production; test data and accounts are removed before production. The SDLC touchpoints are the regulated-data scan and the push-time gate, which look for PANs (checksum-valid 13-19 digit numbers that are not published test card numbers) and SAD in the same sinks as PHI: logs, errors, telemetry, fixtures, seed data, prompts and docs.
+    family: pci-dss
+    jurisdiction: global
+    applicability: [ cardholder-data ]
+    citations:
+      - adapter: clause
+        framework: PCI-DSS-4.0.1
+        clause: "3.3.1, 3.4.1, 3.5.1, 6.5.5, 6.5.6"
+        edition_note: PCI DSS v4.0.1 (PCI SSC, June 2024); future-dated requirements mandatory from 2025-03-31. Requirement numbers only — the standard is copyrighted.
+    implemented_by:
+      - type: skill
+        ref: op-data-scan
+      - type: hook
+        ref: pre-push-gate
+        note: the security-review lens applies the cardholder-data classes when pci-dss is declared
+      - type: skill
+        ref: op-review
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: active
+
+  - id: CTL-PCI-002
+    title: Bespoke software is developed securely and reviewed before release
+    description: >-
+      Bespoke and custom software is developed to secure-coding practice and is reviewed before release to production by someone other than the author, with the review looking for common software attacks and verifying corrections before release. This is the existing independent review and separation-of-duties discipline, named against the PCI requirement so an assessor can map it.
+    family: pci-dss
+    jurisdiction: global
+    applicability: [ cardholder-data ]
+    citations:
+      - adapter: clause
+        framework: PCI-DSS-4.0.1
+        clause: "6.2.1, 6.2.3, 6.2.3.1, 6.2.4"
+        edition_note: PCI DSS v4.0.1 (PCI SSC, June 2024); future-dated requirements mandatory from 2025-03-31. Requirement numbers only — the standard is copyrighted.
+    implemented_by:
+      - type: skill
+        ref: op-review
+        note: independent multi-lens review; self-review recorded and countersigned
+      - type: hook
+        ref: pre-push-gate
+        note: fail-closed AI code and security review on every push
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: active
+
+  - id: CTL-PCI-003
+    title: Vulnerabilities are identified and patched, and software components are inventoried
+    description: >-
+      Security vulnerabilities in bespoke and third-party software are identified and ranked, critical and high-severity patches are applied, and an inventory of bespoke and third-party components is kept so a new advisory can be traced to what is affected. The SDLC runs the dependency, filesystem and secret scans and records the component inventory (lockfile or SBOM) with each release.
+    family: pci-dss
+    jurisdiction: global
+    applicability: [ cardholder-data ]
+    citations:
+      - adapter: clause
+        framework: PCI-DSS-4.0.1
+        clause: "6.3.1, 6.3.2, 6.3.3"
+        edition_note: PCI DSS v4.0.1 (PCI SSC, June 2024); future-dated requirements mandatory from 2025-03-31. Requirement numbers only — the standard is copyrighted.
+    implemented_by:
+      - type: skill
+        ref: op-security
+      - type: hook
+        ref: pre-push-gate
+        note: dependency audit, Trivy and gitleaks stages block on high/critical
+    evidence:
+      - docs/compliance/releases/*-validation.md
+    status: active
+
+  - id: CTL-PCI-004
+    title: Payment-page scripts are inventoried, authorized and integrity-checked
+    description: >-
+      Every script loaded and executed in a payment page in the consumer's browser is authorized, its integrity is assured, and it is listed in an inventory with a written justification; unauthorized changes to the page and its headers are detected. Review treats a change that adds, removes or changes a script on a payment page (including third-party tags) as needing the inventory updated and an integrity mechanism (subresource integrity or CSP) in place. The runtime tamper detection itself is the consuming application's architecture.
+    family: pci-dss
+    jurisdiction: global
+    applicability: [ cardholder-data ]
+    citations:
+      - adapter: clause
+        framework: PCI-DSS-4.0.1
+        clause: "6.4.3, 11.6.1"
+        edition_note: PCI DSS v4.0.1 (PCI SSC, June 2024); future-dated requirements mandatory from 2025-03-31. Requirement numbers only — the standard is copyrighted.
+    implemented_by:
+      - type: skill
+        ref: op-review
+      - type: architecture
+        ref: payment-page-tamper-detection
+        note: change- and tamper-detection on payment pages runs in the consuming app
+    evidence:
+      - docs/compliance/changes/*-change-record.md
+    status: active
+
+  - id: CTL-PCI-005
+    title: Changes are controlled, and PCI requirements are reconfirmed after a significant change
+    description: >-
+      Changes to system components follow documented change-control procedures (reason, security impact, approval, testing, rollback); pre-production and production are separated, with roles separated between them; and after a significant change every applicable PCI DSS requirement is confirmed in place and documented. The change record captures the first set; when the profile declares pci-dss it also records whether the change is significant and, if so, the reconfirmation.
+    family: pci-dss
+    jurisdiction: global
+    applicability: [ cardholder-data ]
+    citations:
+      - adapter: clause
+        framework: PCI-DSS-4.0.1
+        clause: "6.5.1, 6.5.2, 6.5.3, 6.5.4"
+        edition_note: PCI DSS v4.0.1 (PCI SSC, June 2024); future-dated requirements mandatory from 2025-03-31. Requirement numbers only — the standard is copyrighted.
+    implemented_by:
+      - type: skill
+        ref: op-change-record
+    evidence:
+      - docs/compliance/changes/*-change-record.md
     status: active

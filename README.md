@@ -5,7 +5,7 @@ generated skills for OpenAI Codex.**
 
 Most "AI coding" workflows stop at "the model wrote a function." This one encodes the *whole lifecycle* —
 intake → research → plan → build → verify → review → ship → operate — as versioned, human-gated skills that
-**emit compliance evidence (HIPAA / HITECH, SOC 2, 21 CFR Part 11, CCPA) as a byproduct of normal work.**
+**emit compliance evidence (HIPAA / HITECH, SOC 2, 21 CFR Part 11, CCPA, PCI DSS) as a byproduct of normal work.**
 
 Install it once and every Claude Code session — local or remote — gets the same skills, so the workflow gates
 declared in each repo's `CLAUDE.md` are actually enforceable everywhere.
@@ -102,6 +102,25 @@ With no profile, the skills run the framework-agnostic lifecycle and apply the s
 `mkdir -p .sdlc && git mv .claude/compliance-profile.yaml .sdlc/`. The old path still works but is
 reported as deprecated, and if both exist the `.sdlc/` copy wins. The path belongs to no single agent
 runtime, so every coding agent reads the same profile (#56).
+
+## Frameworks covered
+
+A consuming repo activates only the families it declares in its profile.
+
+| Family | Covers | Cited as |
+|---|---|---|
+| `hipaa` | HIPAA Privacy and Security Rules, plus HITECH breach notification and business associates | eCFR (45 CFR 164), HHS guidance |
+| `soc2` | SOC 2 change management and separation of duties | Trust Services Criteria IDs |
+| `part11` | 21 CFR Part 11 traceability and electronic signatures | eCFR (21 CFR 11) |
+| `gxp-csa` | FDA Computer Software Assurance; AI tool qualification | eCFR, FDA guidance, GAMP 5 IDs |
+| `iso-medical` | IEC 62304 / ISO 14971 risk management | Clause IDs |
+| `us-state-privacy` | California CCPA/CPRA | Statute and regulation text |
+| `pci-dss` | PCI DSS v4.0.1 account data, secure development, change control | Requirement numbers |
+
+Copyrighted standards (SOC 2, GAMP 5, ISO, PCI DSS) are cited by identifier only. HITRUST CSF is not
+mapped: its licence forbids derivative works ([why](docs/compliance-model.md#two-tier-source-policy-and-licensing)).
+Worked profiles are in [`controls/examples/`](controls/examples/): a CCPA-only civic app, a HIPAA/GxP
+health app, and a PCI DSS payments service.
 
 ## The compliance angle
 

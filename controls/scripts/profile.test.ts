@@ -62,7 +62,7 @@ test("a profile declaring an unknown family is an error", () => {
 });
 
 test("both committed example profiles validate without errors", () => {
-  for (const name of ["opuspopuli.compliance-profile.yaml", "hipaa-gxp.compliance-profile.yaml"]) {
+  for (const name of ["opuspopuli.compliance-profile.yaml", "hipaa-gxp.compliance-profile.yaml", "payments.compliance-profile.yaml"]) {
     const findings = validateProfile(reg, loadProfile(join(EXAMPLE_PROFILES_DIR, name)));
     assert.deepEqual(findings.filter((f) => f.level === "error"), [], `${name} should have no errors`);
   }
@@ -151,4 +151,22 @@ test("a HIPAA profile activates the HITECH controls", () => {
   const ids = new Set(r.activeControls.map((c) => c.id));
   for (const id of ["CTL-HIPAA-004", "CTL-HIPAA-005", "CTL-HIPAA-006"]) assert.ok(ids.has(id), id);
   assert.equal(reg.frameworks.hipaa.label, "HIPAA / HITECH");
+});
+
+// PCI DSS (#67): the payments example activates the card-data classes and the five PCI controls.
+test("the payments profile activates PCI DSS controls and card-data classes, and nothing health-related", () => {
+  const r = resolveProfile(reg, loadProfile(join(EXAMPLE_PROFILES_DIR, "payments.compliance-profile.yaml")));
+  assert.deepEqual(r.activeDataClasses, ["cardholder-data", "sensitive-authentication-data"]);
+  const ids = new Set(r.activeControls.map((c) => c.id));
+  for (const id of ["CTL-PCI-001", "CTL-PCI-002", "CTL-PCI-003", "CTL-PCI-004", "CTL-PCI-005", "CTL-SOC2-001"]) {
+    assert.ok(ids.has(id), id);
+  }
+  assert.ok(!r.activeControls.some((c) => c.family === "hipaa" || c.family === "part11"));
+  assert.deepEqual(validateProfile(reg, loadProfile(join(EXAMPLE_PROFILES_DIR, "payments.compliance-profile.yaml"))), []);
+});
+
+test("PCI DSS is cited by requirement number only (copyrighted)", () => {
+  for (const c of reg.controls.filter((c) => c.family === "pci-dss")) {
+    assert.ok(c.citations.every((cit) => cit.adapter === "clause"), `${c.id} must use the clause adapter`);
+  }
 });

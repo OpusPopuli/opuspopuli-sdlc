@@ -9,8 +9,9 @@ traceability are just good practice. Once those are encoded as skills that *reco
 evidence an auditor wants falls out of the pipeline instead of being reconstructed under duress.
 
 > **Honesty guardrail.** Everything here is *audit-ready scaffolding and evidence generation* that
-> **supports** the controls below. It does **not** make an organization HIPAA / SOC 2 / Part 11 compliant
-> on its own — that requires policies, training, risk assessments, vendor BAAs, and an actual audit. Never
+> **supports** the controls below. It does **not** make an organization HIPAA, SOC 2, Part 11, CCPA or PCI DSS
+> compliant on its own — that requires policies, training, risk assessments, vendor BAAs, and an actual
+> audit (for PCI DSS, a QSA assessment or self-assessment questionnaire). Never
 > describe a release as "compliant" on the strength of these artifacts; describe it as "audit-ready."
 
 ## The lifecycle as skills
@@ -64,6 +65,11 @@ security-review + regulated-data gate** (scoped to the repo's compliance profile
 | `CTL-CCPA-002` | US state privacy (CCPA/CPRA) | Consumer rights — know, delete, correct, opt-out of sale/sharing | `op-issue-plan`, `op-review` |
 | `CTL-CCPA-003` | US state privacy (CCPA/CPRA) | Reasonable security and breach liability | `op-review`, `op-hotfix` |
 | `CTL-CCPA-004` | US state privacy (CCPA/CPRA) | Service-provider and contractor contract requirements | subprocessor-agreements (arch) |
+| `CTL-PCI-001` | PCI DSS | Account data stays out of code, logs, fixtures, prompts and pre-production; SAD is never stored | `op-data-scan`, `pre-push-gate` (hook), `op-review` |
+| `CTL-PCI-002` | PCI DSS | Bespoke software is developed securely and reviewed before release | `op-review`, `pre-push-gate` (hook) |
+| `CTL-PCI-003` | PCI DSS | Vulnerabilities are identified and patched, and software components are inventoried | `op-security`, `pre-push-gate` (hook) |
+| `CTL-PCI-004` | PCI DSS | Payment-page scripts are inventoried, authorized and integrity-checked | `op-review`, payment-page-tamper-detection (arch) |
+| `CTL-PCI-005` | PCI DSS | Changes are controlled, and PCI requirements are reconfirmed after a significant change | `op-change-record` |
 
 <!-- END generated:control-mapping -->
 
@@ -94,7 +100,7 @@ Every control is pinned to its authoritative source, but sources fall into two l
 - **Public-domain / freely-reusable** (US federal regulations via eCFR; California statute and
   regulation; EU law via EUR-Lex) — pinned by point-in-time version or checksum, and freely
   quotable. These the registry can reproduce.
-- **Copyrighted** (GAMP 5, the SOC 2 Trust Services Criteria, ISO/IEC standards) — cited by clause
+- **Copyrighted** (GAMP 5, the SOC 2 Trust Services Criteria, ISO/IEC standards, PCI DSS) — cited by clause
   identifier **only**. Their text is never vendored into this MIT-licensed repo; the `clause`
   citation schema structurally forbids a text body. This boundary is a licensing requirement, not a
   stylistic choice — an MIT repo cannot redistribute paywalled standards text.
