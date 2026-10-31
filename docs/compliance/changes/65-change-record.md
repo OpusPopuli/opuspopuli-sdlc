@@ -37,19 +37,19 @@ without written consent. Recorded in `docs/compliance-model.md`.
 | `.agents/skills/*` | Regenerated |
 | `.claude-plugin/plugin.json` | 0.5.1 → 0.6.0 |
 
-## Pinning — PENDING
+## Pinning — done
 
-Seven new citations are unpinned, so the three controls are `pin-pending` (validate enforces the
-status). This sandbox cannot reach eCFR or hhs.gov. From an unblocked network:
+Pinned by the repo owner on 2026-10-31 with `npm run pin -- --all-pending` from an unblocked network
+(this sandbox cannot reach eCFR or hhs.gov), committed as `67ad72e` on `chore/pin-hitech-65`:
 
-```
-npm run pin -- --all-pending
-npm run check
-```
+| Citation | Pin |
+|---|---|
+| 45 CFR 164.402 (×2), 164.404, 164.414, 164.308 | amendment date 2016-12-30 |
+| 45 CFR 164.314 | amendment date 2020-11-24 |
+| HHS unsecured-PHI guidance page | sha256 `2110edf1…13cf`, retrieved 2026-10-31 |
 
-The section text was read before writing the controls: §164.402 (breach definition, the four factors,
-unsecured PHI) and the HHS guidance page (title, NIST SP 800-111 / 800-52 / 800-77 / 800-113 / 800-88,
-"content last reviewed" 2013-07-26). `pin.ts` records the pins; they are not written by hand.
+`CTL-HIPAA-004/005/006` moved from `pin-pending` to `active`. The section text was read before the
+controls were written; `pin.ts` recorded the pins, none were written by hand.
 
 ## Data classification
 
@@ -60,7 +60,7 @@ unsecured PHI) and the HHS guidance page (title, NIST SP 800-111 / 800-52 / 800-
 | # | Risk | Severity × likelihood | Mitigation |
 |---|---|---|---|
 | 1 | The skill is read as deciding breach status | high × possible | `op-hotfix` says explicitly it does not decide; it records inputs and a named hand-off, and an unresolved assessment is a `/op-validate` exception |
-| 2 | Controls ship unpinned | medium × certain until pinned | `pin-pending` status is enforced by `validate`; pin command recorded above |
+| 2 | Controls ship unpinned | medium × certain until pinned | `pin-pending` status enforced by `validate`; **closed 2026-10-31** — pinned, status `active` |
 | 3 | HHS guidance page drifts or is replaced | medium × possible | document citation with `asserts.title`; the drift watch checks it once pinned |
 | 4 | HITRUST omission read as a gap | low × likely | documented with the licence reason and the private-overlay path |
 
