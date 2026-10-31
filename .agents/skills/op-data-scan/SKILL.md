@@ -3,7 +3,7 @@ name: op-data-scan
 description: Scan the repo or diff for regulated data (PHI/PII, and other categories per the repo's compliance profile) leaking into code, logs, fixtures, prompts, or seed data. Use before PR prep and release on any change touching personal data.
 ---
 
-<!-- GENERATED from skills/op-data-scan/SKILL.md (opuspopuli-sdlc v0.7.0) by
+<!-- GENERATED from skills/op-data-scan/SKILL.md (opuspopuli-sdlc v0.8.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** (none — scans the current diff by default; pass "full" to scan the whole tree). Codex has no argument substitution: take `{input}`
@@ -11,6 +11,22 @@ from the user's request; it is optional, so use the default when the request doe
 
 Run a regulated-data exposure scan. Default scope is the current diff against the base branch; if
 `{input}` is `full`, scan the whole working tree.
+
+## Run the deterministic scanner first
+
+If the repo has the vendored scanner (conventionally `scripts/data-scan.ts`; see
+`hooks/pre-push-gate.md` in the plugin), run it before anything else:
+
+```
+node --experimental-strip-types scripts/data-scan.ts --base <base-branch>   # the diff (default)
+node --experimental-strip-types scripts/data-scan.ts --all                  # whole tree, when the input is "full"
+```
+
+Put its findings in the report as they are, marked **deterministic**, and do not drop or downgrade
+one. If the scanner is not in the repo, or it could not run, say so at the top of the report. The
+sections below are then the only check, which is weaker. Then do the parts rules cannot: decide whether
+names and addresses are real or synthetic, look for household data, inferences and derived profiles,
+and judge over-broad API fields.
 
 ## Scope the scan to the repo's compliance profile
 

@@ -7,6 +7,22 @@ argument-hint: (none — scans the current diff by default; pass "full" to scan 
 Run a regulated-data exposure scan. Default scope is the current diff against the base branch; if
 `$ARGUMENTS` is `full`, scan the whole working tree.
 
+## Run the deterministic scanner first
+
+If the repo has the vendored scanner (conventionally `scripts/data-scan.ts`; see
+`hooks/pre-push-gate.md` in the plugin), run it before anything else:
+
+```
+node --experimental-strip-types scripts/data-scan.ts --base <base-branch>   # the diff (default)
+node --experimental-strip-types scripts/data-scan.ts --all                  # whole tree, when the input is "full"
+```
+
+Put its findings in the report as they are, marked **deterministic**, and do not drop or downgrade
+one. If the scanner is not in the repo, or it could not run, say so at the top of the report. The
+sections below are then the only check, which is weaker. Then do the parts rules cannot: decide whether
+names and addresses are real or synthetic, look for household data, inferences and derived profiles,
+and judge over-broad API fields.
+
 ## Scope the scan to the repo's compliance profile
 
 First read the consuming repo's compliance profile: `.sdlc/compliance-profile.yaml`, or the
