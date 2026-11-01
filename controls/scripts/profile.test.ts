@@ -23,16 +23,16 @@ test("Opus Populi profile activates CCPA + SOC 2 controls, leaves HIPAA/Part 11/
   const profile = loadProfile(join(EXAMPLE_PROFILES_DIR, "opuspopuli.compliance-profile.yaml"));
   const r = resolveProfile(reg, profile);
 
-  assert.deepEqual(r.activeFamilies, ["soc2", "us-state-privacy"]);
+  assert.deepEqual(r.activeFamilies, ["sdlc-core", "soc2", "us-state-privacy"]);
 
   // SOC 2 and all four CCPA controls are active.
   const activeIds = new Set(r.activeControls.map((c) => c.id));
-  for (const id of ["CTL-SOC2-001", "CTL-CCPA-001", "CTL-CCPA-002", "CTL-CCPA-003", "CTL-CCPA-004"]) {
+  for (const id of ["CTL-SOC2-001", "CTL-CCPA-001", "CTL-CCPA-002", "CTL-CCPA-003", "CTL-CCPA-004", "CTL-AIQ-001"]) {
     assert.ok(activeIds.has(id), `${id} should be active for the Opus Populi profile`);
   }
   // Every HIPAA, Part 11, GxP, and ISO control is inert.
   const inertIds = new Set(r.inertControls.map((c) => c.id));
-  for (const id of ["CTL-HIPAA-001", "CTL-HIPAA-002", "CTL-HIPAA-004", "CTL-HIPAA-005", "CTL-HIPAA-006", "CTL-P11-001", "CTL-P11-002", "CTL-CSA-001", "CTL-AIQ-001", "CTL-ISO-001"]) {
+  for (const id of ["CTL-HIPAA-001", "CTL-HIPAA-002", "CTL-HIPAA-004", "CTL-HIPAA-005", "CTL-HIPAA-006", "CTL-P11-001", "CTL-P11-002", "CTL-CSA-001", "CTL-ISO-001"]) {
     assert.ok(inertIds.has(id), `${id} should be inert for the CCPA-only profile`);
   }
   // No HIPAA control leaks into the active set.
@@ -49,11 +49,26 @@ test("a HIPAA/GxP profile activates PHI data class and Part 11 controls", () => 
   assert.ok(r.inertControls.some((c) => c.id === "CTL-ISO-001")); // iso-medical not declared
 });
 
-test("the no-profile default leaves every framework control inert", () => {
+test("the no-profile default leaves every framework control inert, but always-on controls apply", () => {
   const r = resolveProfile(reg, NO_PROFILE);
-  assert.deepEqual(r.activeControls, []);
+  assert.deepEqual(r.activeControls.map((c) => c.id), ["CTL-AIQ-001"]);
+  assert.ok(r.activeControls.every((c) => c.family === "sdlc-core"));
   assert.deepEqual(r.activeDataClasses, []);
-  assert.equal(r.inertControls.length, reg.controls.length);
+  assert.equal(r.inertControls.length, reg.controls.length - 1);
+});
+
+// #50: AI tool qualification applies to every adopter, because every adopter is AI-assisted.
+test("CTL-AIQ-001 is active for every profile, however narrow", () => {
+  for (const families of [[], ["soc2"], ["us-state-privacy"], ["pci-dss"], ["hipaa", "part11"]]) {
+    const r = resolveProfile(reg, { version: 1, families });
+    assert.ok(r.activeControls.some((c) => c.id === "CTL-AIQ-001"), `inert for [${families.join(", ")}]`);
+  }
+});
+
+test("declaring an always-on family is a warning, not an error", () => {
+  const findings = validateProfile(reg, { version: 1, families: ["sdlc-core", "soc2"] });
+  assert.deepEqual(findings.filter((f) => f.level === "error"), []);
+  assert.ok(findings.some((f) => f.level === "warning" && /always on/.test(f.message)));
 });
 
 test("a profile declaring an unknown family is an error", () => {

@@ -28,17 +28,23 @@ export interface ResolvedProfile {
 }
 
 // The default when a consuming repo declares no profile: framework-agnostic lifecycle only.
-// No framework families are active, so every framework-conditional control is inert; only the
-// unconditional lifecycle behaviors (plans, change records, traceability) run.
+// No declared families, so every framework-conditional control is inert; the unconditional lifecycle
+// behaviors (plans, change records, traceability) run, and so do the registry's always-on families.
 export const NO_PROFILE: Profile = { version: 1, repo: "(no compliance profile declared)", families: [] };
 
+// Families active for every repo whatever its profile declares (#50): controls about using this
+// SDLC at all, such as AI tool qualification, cannot be opted out of by declaring a narrow profile.
+export function alwaysOnFamilies(reg: Registry): string[] {
+  return reg.profiles.always_on ?? [];
+}
+
 export function resolveProfile(reg: Registry, profile: Profile): ResolvedProfile {
-  const active = new Set(profile.families);
+  const active = new Set([...profile.families, ...alwaysOnFamilies(reg)]);
   const activeControls = reg.controls.filter((c) => active.has(c.family));
   const inertControls = reg.controls.filter((c) => !active.has(c.family));
 
   const dataClasses = new Set<string>();
-  for (const fam of profile.families) {
+  for (const fam of active) {
     for (const dc of reg.frameworks[fam]?.data_classes ?? []) dataClasses.add(dc);
   }
 
@@ -47,7 +53,7 @@ export function resolveProfile(reg: Registry, profile: Profile): ResolvedProfile
 
   return {
     repo: profile.repo ?? NO_PROFILE.repo!,
-    activeFamilies: [...profile.families].sort(),
+    activeFamilies: [...active].sort(),
     activeControls,
     inertControls,
     activeDataClasses: [...dataClasses].sort(),
@@ -73,9 +79,12 @@ export function validateProfile(reg: Registry, profile: unknown): ProfileFinding
   }
 
   const known = new Set(reg.profiles.families);
+  const alwaysOn = new Set(alwaysOnFamilies(reg));
   for (const fam of p.families) {
     if (!known.has(fam)) {
       findings.push({ level: "error", message: `family "${fam}" is not a registry family (profiles.families)` });
+    } else if (alwaysOn.has(fam)) {
+      findings.push({ level: "warning", message: `family "${fam}" is always on; declaring it is redundant` });
     }
   }
 

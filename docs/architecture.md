@@ -111,8 +111,10 @@ naming the framework **families** that apply to it. Controls whose family is not
 - Each `frameworks:` entry lists `data_classes`; `op-data-scan` scans for the union across the
   profile's declared families (`hipaa → phi-pii`, `us-state-privacy → ca-personal-information`,
   `pci-dss → cardholder-data, sensitive-authentication-data`).
-- **No profile declared** → framework-agnostic lifecycle only (plans, change records, traceability
-  always run), the strict PHI/PII scan lens, and a visible "no compliance profile declared" note.
+- **Always on** → `sdlc-core` (registry `profiles.always_on`) is active for every repo whatever it
+  declares, because it covers using this SDLC at all: AI tool qualification (`CTL-AIQ-001`, #50).
+- **No profile declared** → framework-agnostic lifecycle (plans, change records, traceability
+  always run), the always-on families, the strict PHI/PII scan lens, and a visible "no compliance profile declared" note.
 
 **Honesty about enforcement:** the *contract* is code-enforced (validator + resolver), but the
 skills honor a resolved profile because their prose instructs the AI to — they are markdown, not a

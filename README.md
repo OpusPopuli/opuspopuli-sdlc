@@ -98,7 +98,7 @@ checkout of this repo:
 npm run profile:check -- --repo ../my-service
 ```
 
-With no profile, the skills run the framework-agnostic lifecycle and apply the strict PHI/PII lens.
+With no profile, the skills run the framework-agnostic lifecycle, the always-on `sdlc-core` controls, and the strict PHI/PII lens.
 
 **Upgrading from 0.2.x:** the profile used to live at `.claude/compliance-profile.yaml`. Move it with
 `mkdir -p .sdlc && git mv .claude/compliance-profile.yaml .sdlc/`. The old path still works but is
@@ -107,10 +107,11 @@ runtime, so every coding agent reads the same profile (#56).
 
 ## Frameworks covered
 
-A consuming repo activates only the families it declares in its profile.
+A consuming repo activates only the families it declares in its profile, plus the always-on `sdlc-core`.
 
 | Family | Covers | Cited as |
 |---|---|---|
+| `sdlc-core` | **Always on**, for every repo whatever its profile says: qualification of the AI assisting development (`CTL-AIQ-001`) | GAMP 5 clause IDs |
 | `hipaa` | HIPAA Privacy and Security Rules, plus HITECH breach notification and business associates | eCFR (45 CFR 164), HHS guidance |
 | `soc2` | SOC 2 change management and separation of duties | Trust Services Criteria IDs |
 | `part11` | 21 CFR Part 11 traceability and electronic signatures | eCFR (21 CFR 11) |

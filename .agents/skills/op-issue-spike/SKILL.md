@@ -3,7 +3,7 @@ name: op-issue-spike
 description: Run a time-boxed technical spike (investigation only, no production code) and produce a recommendation. Use to de-risk an unknown before committing to an approach.
 ---
 
-<!-- GENERATED from skills/op-issue-spike/SKILL.md (opuspopuli-sdlc v0.8.0) by
+<!-- GENERATED from skills/op-issue-spike/SKILL.md (opuspopuli-sdlc v0.9.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<the question or area to investigate>`. Codex has no argument substitution: take `{input}`

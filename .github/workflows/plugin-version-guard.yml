@@ -18,6 +18,14 @@ name: plugin-version-guard
 # moves, the version does not, and consumers cannot tell. The fix in both cases
 # is to make the version the thing that must move.
 #
+# It happened a second time, one directory over (#55). This guard used to watch
+# only skills/, hooks/ and .claude-plugin/, on the premise that controls/ and
+# docs/ are never read from the installed cache. They are: the marketplace entry
+# is a full git clone. #45-#47 corrected the registry (including the mislabelled
+# CSA pin) touching only controls/ and docs/, so no version moved, and a consumer
+# kept reading the September 2025 pin from a cache ten commits behind. Do not
+# narrow the watched paths again without checking what the clone actually serves.
+#
 # Offline: no network, no secrets beyond the default token.
 
 on:
@@ -40,6 +48,11 @@ jobs:
           # Full history so the merge base with the target branch is reachable.
           fetch-depth: 0
 
+      # The path rules live in controls/scripts/version-guard.ts so they are unit-tested.
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+
       - name: Require a version bump for distributed content changes
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
@@ -49,12 +62,16 @@ jobs:
 
           MANIFEST=.claude-plugin/plugin.json
 
-          # Everything shipped to consumers when the plugin installs. docs/ and
-          # controls/ are deliberately excluded: they are read in the repo, not
-          # resolved from the installed cache, so they cannot go stale for a
-          # consumer the way a skill can.
-          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- \
-            skills hooks .claude-plugin || true)
+          # Everything a consumer reads from the installed plugin. The marketplace
+          # entry is a FULL git clone, so that is skills/, hooks/, .claude-plugin/,
+          # the Codex skills and template, controls/ (the registry the skills cite)
+          # and docs/ — except docs/plans/ and docs/compliance/, which are this
+          # repo's own evidence. An earlier rule excluded controls/ and docs/ on the
+          # premise that consumers never read them from the cache; they do, and a
+          # stale CSA pin reached one that way (#55). Rules + tests:
+          # controls/scripts/version-guard.ts.
+          CHANGED=$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" \
+            | node --experimental-strip-types controls/scripts/version-guard.ts)
 
           if [ -z "$CHANGED" ]; then
             echo "No distributed plugin content changed — version bump not required."

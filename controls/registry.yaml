@@ -26,7 +26,15 @@ preamble:
 profiles:
   # Framework families a consuming repo may declare. Controls outside a repo's declared
   # families are inert for that repo. Extension packs (#7-#9) add families here.
+  #
+  # always_on: families active for EVERY consuming repo, whatever its profile says, including a repo
+  # with no profile. They hold controls that apply to the act of using this SDLC at all, not to a
+  # regulatory regime: every adopter is AI-assisted by construction, so AI tool qualification cannot
+  # depend on whether a repo happens to be in a GxP context (#50).
+  always_on:
+    - sdlc-core
   families:
+    - sdlc-core
     - hipaa
     - part11
     - soc2
@@ -44,6 +52,7 @@ profiles:
 # scan looks for. Packs extend this: #8 adds ca-personal-information to us-state-privacy, #7 adds
 # eu-personal-data to gdpr.
 frameworks:
+  sdlc-core: { label: SDLC core (always on), sort: 0, data_classes: [] }
   hipaa: { label: HIPAA / HITECH, sort: 1, data_classes: [ phi-pii ] }
   soc2: { label: SOC 2, sort: 2, data_classes: [] }
   part11: { label: 21 CFR Part 11, sort: 3, data_classes: [] }
@@ -430,8 +439,8 @@ controls:
   - id: CTL-AIQ-001
     title: AI tool qualification — the AI assisting this SDLC is qualified for its intended use
     description: >-
-      Answers the auditor question "how is the AI assisting this SDLC itself controlled?". The SDLC is assisted by Claude Code (Anthropic's Claude, e.g. Opus 4.x) — a hosted model, NOT self-hosted. Qualification rests on: a recorded model/plugin version, human approval gates at every lifecycle phase (no autonomous production changes), versioned skills whose actions are recorded, and an honest data-handling posture. Data handling: source code and diffs are sent to Anthropic's API; an organization qualifying this tool for regulated use should assess Anthropic's data-handling terms (no training on API inputs, zero-data-retention options) and decide accordingly — this control does NOT claim code stays in a local trust boundary. (The consuming application's runtime data residency is a separate concern — see CTL-HIPAA-002.)
-    family: gxp-csa
+      Answers the auditor question "how is the AI assisting this SDLC itself controlled?". The SDLC is assisted by a hosted coding agent (Claude Code or Codex) — NOT self-hosted. Qualification rests on: a recorded model/plugin version, human approval gates at every lifecycle phase (no autonomous production changes), versioned skills whose actions are recorded, and an honest data-handling posture. Data handling: source code and diffs are sent to the agent vendor's API (Anthropic or OpenAI); an organization qualifying the tool for regulated use should assess that vendor's data-handling terms (no training on API inputs, zero-data-retention options) and decide accordingly — this control does NOT claim code stays in a local trust boundary. (The consuming application's runtime data residency is a separate concern — see CTL-HIPAA-002.)
+    family: sdlc-core
     jurisdiction: global
     applicability: [ all ]
     citations:
@@ -442,8 +451,8 @@ controls:
           GAMP 5 2nd edition (ISPE, 2022) — verify exact appendix numbering against a licensed copy before citing in an audit response; text is never vendored here.
     implemented_by:
       - type: architecture
-        ref: claude-code-tooling
-        note: Anthropic Claude via Claude Code; hosted, versioned, recorded — not self-hosted
+        ref: hosted-coding-agent
+        note: Claude Code (Anthropic) or Codex (OpenAI); hosted, versioned, recorded — not self-hosted
       - type: architecture
         ref: human-gated-skills
       - type: skill

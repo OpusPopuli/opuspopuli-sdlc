@@ -37,14 +37,15 @@ is a finding, not a pass.
 
 Compliance readers must not conflate the two AI systems in play:
 
-1. **The SDLC's development-time AI is Claude Code** (Anthropic's Claude). It is the AI that plans,
-   builds, and reviews software when a developer runs these skills. It is a **hosted** model —
-   source code and diffs are sent to Anthropic's API. Its qualification (`CTL-AIQ-001`) rests on a
-   recorded model/plugin version, human approval gates at every phase (no autonomous production
-   changes), versioned skills whose actions are recorded, and an **honest data-handling posture**.
-   An organization qualifying this tool for regulated use should assess Anthropic's data-handling
-   terms — no training on API inputs, zero-data-retention options — and decide accordingly. This
-   plugin does **not** claim source code stays inside a local trust boundary.
+1. **The SDLC's development-time AI is a hosted coding agent:** Claude Code (Anthropic) or Codex
+   (OpenAI). It is the AI that plans, builds, and reviews software when a developer runs these
+   skills. Source code and diffs are sent to that vendor's API. Its qualification (`CTL-AIQ-001`)
+   rests on a recorded model and plugin version, human approval gates at every phase (no autonomous
+   production changes), versioned skills whose actions are recorded, and an **honest data-handling
+   posture**. An organization qualifying the tool for regulated use should assess the vendor's
+   data-handling terms (training on inputs, zero-data-retention options) and decide accordingly.
+   This plugin does **not** claim source code stays inside a local trust boundary. The control is
+   always on: it applies to every adopter, whatever its compliance profile declares (#50).
 
 2. **The consuming application's runtime AI is the application's own choice** (`CTL-HIPAA-002`). If
    the app processes regulated data at runtime, keeping that data in-boundary is the app's
