@@ -48,6 +48,7 @@ security-review + regulated-data gate** (scoped to the repo's compliance profile
 
 | Control ID | Framework | Control | Implemented by |
 |------------|-----------|---------|----------------|
+| `CTL-AIQ-001` | SDLC core (always on) | AI tool qualification — the AI assisting this SDLC is qualified for its intended use | hosted-coding-agent (arch), human-gated-skills (arch), `op-validate` |
 | `CTL-HIPAA-001` | HIPAA / HITECH | PHI never appears in logs, prompts, or fixtures | `op-data-scan`, `pre-push-gate` (hook), audit-logger-pii-masking (arch) |
 | `CTL-HIPAA-002` | HIPAA / HITECH | Runtime data residency and minimum necessary for regulated data | consuming-app-runtime-residency (arch), `op-review`, `op-validate` |
 | `CTL-HIPAA-003` | HIPAA / HITECH | Access to PHI is restricted and reviewed at the API surface | `op-review` |
@@ -58,7 +59,6 @@ security-review + regulated-data gate** (scoped to the repo's compliance profile
 | `CTL-SOD-001` | SOC 2 | Separation of duties — self-review is flagged and requires countersignature | `op-review`, `op-change-record` |
 | `CTL-P11-001` | 21 CFR Part 11 | Requirement-to-code-to-test-to-release traceability | `op-trace` |
 | `CTL-P11-002` | 21 CFR Part 11 | Electronic signatures — approvals captured as signed who/when/meaning records | `op-change-record` |
-| `CTL-AIQ-001` | Part 11 / GxP (CSA) | AI tool qualification — the AI assisting this SDLC is qualified for its intended use | claude-code-tooling (arch), human-gated-skills (arch), `op-validate` |
 | `CTL-CSA-001` | Part 11 / GxP (CSA) | Validation evidence — risk-based release qualification pack (CSA posture) | `op-validate` |
 | `CTL-ISO-001` | ISO 62304 / 14971 | Risk management per change — risk register in every plan of record | `op-issue-plan` |
 | `CTL-CCPA-001` | US state privacy (CCPA/CPRA) | Personal and sensitive personal information — definitions and handling | `op-data-scan`, `pre-push-gate` (hook) |
@@ -84,6 +84,15 @@ issued **2026-02-02**, superseding the 2025-09-24 guidance of the near-identical
 as `CTL-CSA-001` — is the current articulation of that shift. The revision tracks the amended 21 CFR
 Part 820 (the **QMSR**, which incorporates ISO 13485:2016 by reference; final rule 89 FR 7496,
 effective 2026-02-02), now cited alongside it in the same control.
+
+**Why the QMSR is a citation, not its own control (#44).** A control here means an SDLC artifact
+implements part of an obligation. The QMSR is a quality management system for device manufacturers
+(management responsibility, design controls, purchasing, CAPA, complaint handling), and this plugin
+implements none of that; it produces software-assurance evidence a manufacturer's QMS can reference.
+A `CTL-QMSR-001` would claim implementation where there is only a reference, which is the overclaim
+this model avoids. The Part 820 citation on `CTL-CSA-001` still gets automated drift coverage
+(weekly tier), so a QMSR amendment is caught. Revisit if a skill starts producing a QMS record, for
+example design-history or CAPA entries.
 
 This plugin is CSA-native by construction. It adds **no** validation master plan, **no** scripted
 IQ/OQ/PQ document tree, **no** ceremony proportional to nothing. The risk register in every
@@ -154,12 +163,14 @@ needs both.
 
 An honest compliance model must not conflate the two AI systems in play:
 
-- **The SDLC's development-time AI is Claude Code** (Anthropic's Claude) — a **hosted** model.
-  Source code and diffs are sent to Anthropic's API. Its qualification (`CTL-AIQ-001`) rests on a
-  recorded model/plugin version, human approval gates at every phase, versioned skills whose actions
-  are recorded, and an honest data-handling posture — an organization qualifying the tool should
-  assess Anthropic's data-handling terms (no training on API inputs, zero-data-retention options).
-  This plugin does **not** claim source code stays inside a local trust boundary.
+- **The SDLC's development-time AI is a hosted coding agent:** Claude Code (Anthropic) or Codex
+  (OpenAI). Source code and diffs are sent to that vendor's API. Its qualification (`CTL-AIQ-001`)
+  rests on a recorded model and plugin version, human approval gates at every phase, versioned skills
+  whose actions are recorded, and an honest data-handling posture: an organization qualifying the
+  tool should assess the vendor's data-handling terms (training on inputs, zero-data-retention
+  options). This plugin does **not** claim source code stays inside a local trust boundary.
+  `CTL-AIQ-001` is in the always-on `sdlc-core` family, so it applies to every repo that uses this
+  SDLC, whatever its profile declares (#50).
 - **The consuming application's runtime data residency is the application's own concern**
   (`CTL-HIPAA-002`). If it processes regulated data at runtime, keeping that data in-boundary is its
   architectural responsibility. Opus Populi, for instance, runs self-hosted inference and a private

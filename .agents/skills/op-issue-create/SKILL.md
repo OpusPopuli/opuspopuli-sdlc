@@ -3,7 +3,7 @@ name: op-issue-create
 description: Create a well-structured GitHub issue (bug/feature/chore) from a rough description. Use when filing new work.
 ---
 
-<!-- GENERATED from skills/op-issue-create/SKILL.md (opuspopuli-sdlc v0.8.0) by
+<!-- GENERATED from skills/op-issue-create/SKILL.md (opuspopuli-sdlc v0.9.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<description of the bug, feature, or chore>`. Codex has no argument substitution: take `{input}`

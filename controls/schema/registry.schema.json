@@ -79,6 +79,14 @@
             "$ref": "#/definitions/slug"
           },
           "description": "Framework families a consuming repo may declare in its profile. A control whose family is absent from a repo's profile is inert for that repo."
+        },
+        "always_on": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/definitions/slug"
+          },
+          "description": "Families active for every consuming repo regardless of its profile, including a repo with no profile. Each must also be listed in families. Declaring one in a profile is redundant (validate-profile warns)."
         }
       }
     },

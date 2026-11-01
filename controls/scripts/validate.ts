@@ -55,6 +55,9 @@ export function validateRegistry(registry: unknown, opts: ValidateOptions): Find
   }
 
   const families = new Set(reg.profiles.families);
+  for (const fam of reg.profiles.always_on ?? []) {
+    if (!families.has(fam)) err(`profiles.always_on: "${fam}" is not a declared family in profiles.families`);
+  }
   const frameworks = reg.frameworks ?? {};
   // Every framework label must key a declared family — no orphan labels.
   for (const key of Object.keys(frameworks)) {

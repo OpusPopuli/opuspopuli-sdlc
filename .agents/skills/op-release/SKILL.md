@@ -3,7 +3,7 @@ name: op-release
 description: Prepare a release — changelog, semver bump, release notes, and the validation evidence pack. Use before tagging a release.
 ---
 
-<!-- GENERATED from skills/op-release/SKILL.md (opuspopuli-sdlc v0.8.0) by
+<!-- GENERATED from skills/op-release/SKILL.md (opuspopuli-sdlc v0.9.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<release version, e.g. v1.4.0>`. Codex has no argument substitution: take `{input}`

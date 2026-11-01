@@ -115,8 +115,13 @@ controls (`CTL-CCPA-*`). It is designed to grow: another state law (e.g. Virgini
 CPA) is added as new `CTL-<STATE>-*` control entries in the same family — no schema change, no new
 adapter. A consuming repo in that state adds the family to its profile; nothing else moves.
 
-**No profile declared:** the default is the framework-agnostic lifecycle only (plans, change
-records, traceability always run); the strict PHI/PII scan lens is used, and evidence packs carry a
+**Always-on families.** `profiles.always_on` lists families active for every repo, profile or not:
+today `sdlc-core`, which holds AI tool qualification (`CTL-AIQ-001`). Every adopter is AI-assisted by
+construction, so that control cannot depend on declaring GxP (#50). Declaring an always-on family in a
+profile is redundant and `profile:check` warns.
+
+**No profile declared:** the default is the framework-agnostic lifecycle (plans, change records,
+traceability always run) plus the always-on families; the strict PHI/PII scan lens is used, and evidence packs carry a
 visible "no compliance profile declared" note.
 
 ## Source adapters

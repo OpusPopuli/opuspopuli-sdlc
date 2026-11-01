@@ -45,7 +45,7 @@ export interface FrameworkLabel {
 export interface Registry {
   version: number;
   preamble: { intended_use: string };
-  profiles: { families: string[] };
+  profiles: { families: string[]; always_on?: string[] };
   frameworks: Record<string, FrameworkLabel>;
   controls: Control[];
 }

@@ -3,7 +3,7 @@ name: op-change-record
 description: Generate a signed change-control record for the current PR — what/why/risk/data/review/rollback (SOC 2 CC8.1, 21 CFR Part 11). Use when a change is ready to merge.
 ---
 
-<!-- GENERATED from skills/op-change-record/SKILL.md (opuspopuli-sdlc v0.8.0) by
+<!-- GENERATED from skills/op-change-record/SKILL.md (opuspopuli-sdlc v0.9.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number or PR number>`. Codex has no argument substitution: take `{input}`
