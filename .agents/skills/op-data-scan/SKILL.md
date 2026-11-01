@@ -3,7 +3,7 @@ name: op-data-scan
 description: Scan the repo or diff for regulated data (PHI/PII, and other categories per the repo's compliance profile) leaking into code, logs, fixtures, prompts, or seed data. Use before PR prep and release on any change touching personal data.
 ---
 
-<!-- GENERATED from skills/op-data-scan/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-data-scan/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** (none — scans the current diff by default; pass "full" to scan the whole tree). Codex has no argument substitution: take `{input}`
@@ -63,12 +63,14 @@ Scan for these exposure sinks specifically:
    OpenTelemetry attributes without masking. (The audit logger masks PII by design — flag anything that
    bypasses it.)
 2. **Fixtures & seed data** — real (not synthetic) personal data committed under `__tests__`, fixtures,
-   or `supabase/seed*`. Test data must be synthetic/faker-generated.
+   or seed and migration data (`supabase/seed*`, `src/main/resources/db/`, `db/seeds/`). Test data must
+   be synthetic/faker-generated.
 3. **Prompts** — PHI/PII interpolated into any text the consuming app sends to a model at runtime.
    If the app uses self-hosted inference (as Opus Populi does) this stays in its trust boundary, but
    still flag it — minimum-necessary applies internally too. (This is about the *app's* runtime AI,
    not the SDLC's own tooling.)
-4. **GraphQL over-exposure** — resolvers or fields that return more personal data than the operation needs.
+4. **API over-exposure** — GraphQL resolvers or fields, REST or gRPC responses that return more personal
+   data than the operation needs.
 5. **Hardcoded examples** — realistic-looking personal records pasted into code comments or docs.
 
 ## CCPA / CPRA personal information (data class `ca-personal-information`)
@@ -98,7 +100,7 @@ biometric identifiers, and health/sex-life/sexual-orientation data. Treat exposu
 critical/high.
 
 The exposure sinks are the same as the PHI/PII section (logs & errors, fixtures & seed data,
-prompts, GraphQL over-exposure, hardcoded examples). Note that most name/address/email/identifier
+prompts, API over-exposure, hardcoded examples). Note that most name/address/email/identifier
 findings apply under both `phi-pii` and `ca-personal-information`; the CCPA-distinct additions are
 household data, pseudonymous identifiers, browsing/commercial history, and inferences.
 

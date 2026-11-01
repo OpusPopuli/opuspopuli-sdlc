@@ -10,8 +10,10 @@ Fix the bug described in GitHub issue #$ARGUMENTS.
 2. Implement the minimal fix — avoid scope creep
 3. Follow existing patterns in the affected service
 4. Write or update tests that would have caught this bug
-5. Run: pnpm lint && pnpm test in the affected package
-6. Verify no unintended changes to GraphQL schema or Supabase migrations
+5. Run the stack's `lint` and `test` stages for the affected workspace
+   (`node --experimental-strip-types scripts/stack.ts run lint`, then `test`)
+6. Verify no unintended changes to API contracts (GraphQL schema, OpenAPI spec, gRPC protos) or
+   database migrations
 7. Run `/op-verify` to drive the fixed path end-to-end and confirm the bug is actually gone
 8. Stage changes and show a diff summary for my review
 9. Prepare a commit message: fix(scope): short description (#issue-num)

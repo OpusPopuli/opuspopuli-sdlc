@@ -3,7 +3,7 @@ name: op-trace
 description: Build or update the Requirements Traceability Matrix for an issue — requirement → plan → code → test → review → release. Use to prove traceability for an issue or before an audit.
 ---
 
-<!-- GENERATED from skills/op-trace/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-trace/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number>`. Codex has no argument substitution: take `{input}`

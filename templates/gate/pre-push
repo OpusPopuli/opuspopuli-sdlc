@@ -1,0 +1,40 @@
+#!/bin/sh
+# Reference pre-push gate for any stack (opuspopuli-sdlc templates/gate/pre-push).
+#
+# Copy to .husky/pre-push (husky), call it from lefthook's pre-push, or install it as
+# .git/hooks/pre-push. Vendor hooks/stack.ts, hooks/data-scan.ts and hooks/review-gate.ts from the
+# plugin into scripts/, and declare .sdlc/stack.yaml (or let stack.ts detect a single-stack repo).
+#
+# Every stage FAILS CLOSED: a check that cannot run blocks the push, the same as a check that fails.
+# `git push --no-verify` is the only override; log it as an exception for op-validate.
+set -e
+
+BASE="${SDLC_BASE:-origin/$(git remote show origin 2>/dev/null | sed -n 's/.*HEAD branch: //p')}"
+PROVIDER="${SDLC_REVIEW_PROVIDER:-claude}"   # or codex
+run() { node --experimental-strip-types "$@"; }
+block() { printf '\nPush blocked: %s\n' "$1"; exit 1; }
+
+# 0. Never push straight to the default branch (reads the refs being pushed, so tags are fine).
+while read -r _l _s remote_ref _r; do
+  [ "$remote_ref" = "refs/heads/${BASE#origin/}" ] && block "direct pushes to ${BASE#origin/} are not allowed; open a PR"
+done
+
+# 1-4. Build stages, from .sdlc/stack.yaml: tests with coverage floors, duplication, lint,
+#      dependency audit, licence policy. Each workspace of a polyglot repo runs its own commands.
+for stage in test duplication lint dependency-audit licence-check; do
+  run scripts/stack.ts run "$stage" || block "the $stage stage failed (scripts/stack.ts show prints the command)"
+done
+
+# 5-6. Filesystem vulnerability and secret scans.
+command -v trivy >/dev/null 2>&1 || block "trivy is not installed (https://trivy.dev)"
+trivy fs . --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --quiet --exit-code 1 || block "Trivy found HIGH/CRITICAL vulnerabilities"
+command -v gitleaks >/dev/null 2>&1 || block "gitleaks is not installed (https://github.com/gitleaks/gitleaks)"
+gitleaks detect --source . --no-banner --exit-code 1 || block "gitleaks found potential secrets"
+
+# 6b. Deterministic regulated-data scan, scoped to .sdlc/compliance-profile.yaml.
+run scripts/data-scan.ts --base "$BASE" || block "the data scan found regulated data (or could not run)"
+
+# 7-8. AI code and security review, on Claude Code or Codex.
+for lens in code security; do
+  run scripts/review-gate.ts --provider "$PROVIDER" --lens "$lens" --base "$BASE" || block "the AI $lens review"
+done

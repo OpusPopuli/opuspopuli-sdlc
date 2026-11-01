@@ -9,6 +9,8 @@ procedures; invoke them as `$op-issue-plan`, `$op-verify`, and so on.
 
 - Read the compliance profile at `.sdlc/compliance-profile.yaml` before planning or reviewing. With no
   profile, apply the strict PHI/PII lens.
+- Build, test and lint with the repo's stack commands, not guessed ones: `.sdlc/stack.yaml`, printed by
+  `node --experimental-strip-types scripts/stack.ts show` and run with `... stack.ts run <stage>`.
 - Plan before code: run `$op-issue-plan` for any issue and wait for human approval before editing files.
   The approved plan is persisted under `docs/plans/`.
 - Never put real personal or health data in logs, error messages, fixtures, seed data or prompts. Use

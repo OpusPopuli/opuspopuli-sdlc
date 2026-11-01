@@ -3,7 +3,7 @@ name: op-validate
 description: Assemble the release validation / qualification evidence pack for an auditor (HIPAA-first, CSV/CSA-style). Use at release time to produce the audit binder.
 ---
 
-<!-- GENERATED from skills/op-validate/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-validate/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<release version, e.g. v1.4.0>`. Codex has no argument substitution: take `{input}`

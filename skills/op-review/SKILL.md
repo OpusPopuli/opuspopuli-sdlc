@@ -15,9 +15,11 @@ Run the review as **independent lenses** and merge the results — do not let on
 Where useful, spawn parallel subagents (one per lens) so each looks with fresh eyes, then reconcile:
 
 - **Correctness** — does it do what the issue requires? Null/undefined on hot paths, empty arrays, race conditions
-- **Security** — injection, auth/HMAC/CSRF bypass, SSRF, over-exposed data in GraphQL resolvers
+- **Security** — injection, authentication or authorization bypass (including CSRF and request
+  signing, where the repo uses them), SSRF, over-exposed data in API responses (GraphQL resolvers,
+  REST or gRPC handlers)
 - **Regulated-data handling** — does any regulated data reach logs, error messages, prompts, fixtures, seed
-  data, or an over-broad GraphQL field? Is field-level access appropriately restricted? Scope this lens to
+  data, or an over-broad API field? Is field-level access appropriately restricted? Scope this lens to
   the data classes the repo's compliance profile makes active (`.sdlc/compliance-profile.yaml`, or the deprecated `.claude/` copy) — PHI/PII
   when `hipaa` is declared, CCPA personal information when `us-state-privacy` is declared, and so on. With
   no profile, default to the strict PHI/PII lens. (See `/op-data-scan`.)
@@ -29,7 +31,8 @@ Where useful, spawn parallel subagents (one per lens) so each looks with fresh e
   unmasked or stored readable, and a change that adds, removes or changes a script on a payment page
   without updating the script inventory and an integrity mechanism (subresource integrity or CSP).
 - **Performance** — N+1 queries, missing indexes, large payloads
-- **TypeScript strictness** — no implicit `any`, proper typing
+- **Type safety**, in the language at hand — TypeScript: strict mode, no implicit `any`; Java/Kotlin:
+  nullability, unchecked casts and raw types; Python: type hints on public interfaces
 - **Test coverage** — are the important paths (including the regulated-data paths) tested?
 - **Consistency** — matches existing patterns in this codebase
 

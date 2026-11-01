@@ -19,6 +19,8 @@ opuspopuli-sdlc/
 ├── hooks/pre-push-gate.md      # the enforcement gate consuming repos install as a git hook
 ├── hooks/review-gate.ts        # fail-closed AI review runner (claude | codex) for gate stages 7–8
 ├── hooks/data-scan.ts          # deterministic regulated-data scanner, gate stage 6b and op-data-scan
+├── hooks/stack.ts              # stack-neutral build stages from .sdlc/stack.yaml (gate stages 1–4)
+├── templates/gate/pre-push     # complete reference gate for any stack
 ├── controls/
 │   ├── registry.yaml           # THE control registry — the canonical asset
 │   ├── intended-use.md         # registry preamble: intended use, GxP impact, honesty guardrail
@@ -173,7 +175,8 @@ Single-language **TypeScript**, run via Node's native type-stripping (Node ≥ 2
 1. Install the plugin (see the README for the current `/plugin` commands) so the `op-*` skills are
    available in Claude Code. On Codex, copy `.agents/skills/op-*` and `templates/codex/AGENTS.md` into
    the repo instead (README, "Using Codex").
-2. Add `.sdlc/compliance-profile.yaml` (formerly `.claude/`; the old path is a deprecated fallback) declaring the framework families that apply to you (start
+2. Add `.sdlc/stack.yaml` for the repo's stack (pnpm, npm, Maven, Gradle or a polyglot mix), or let it be
+   detected for a single-stack repo; then add `.sdlc/compliance-profile.yaml` (formerly `.claude/`; the old path is a deprecated fallback) declaring the framework families that apply to you (start
    from an example in [`controls/examples/`](../controls/examples/)). Everything outside your
    profile stays inert.
 3. Install the pre-push gate ([`hooks/pre-push-gate.md`](../hooks/pre-push-gate.md)) so the

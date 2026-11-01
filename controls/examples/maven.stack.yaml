@@ -1,0 +1,6 @@
+# Worked example — a single Maven service. Coverage is enforced by jacoco:check bound to verify;
+# checkstyle, spotbugs and pmd are declared in the pom. Uses ./mvnw when the repo has one.
+version: 1
+preset: java-maven
+licence:
+  forbidden: [GPL-2.0-only, GPL-3.0-only, AGPL-3.0-only]

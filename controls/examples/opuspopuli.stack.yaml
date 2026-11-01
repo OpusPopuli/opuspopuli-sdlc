@@ -1,0 +1,10 @@
+# Worked example — the Opus Populi monorepo (pnpm workspaces, NestJS + Next.js).
+# Copy to .sdlc/stack.yaml in the consuming repo. See hooks/stack.ts.
+version: 1
+preset: node-pnpm
+commands:
+  lint: pnpm lint:sonar     # SonarJS rules on top of each package's lint
+  duplication: pnpm jscpd   # the repo's own jscpd version and .jscpd.json thresholds
+licence:
+  # AGPL-3.0 + dual commercial licence: GPL-only dependencies would break the commercial option.
+  forbidden: [GPL-2.0-only, GPL-2.0-or-later, GPL-3.0-only, GPL-3.0-or-later]

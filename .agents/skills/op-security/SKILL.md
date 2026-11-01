@@ -3,14 +3,16 @@ name: op-security
 description: Run a local security scan (dependency CVEs, filesystem, secrets) and triage findings. Use before PR prep or release.
 ---
 
-<!-- GENERATED from skills/op-security/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-security/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Run a local security scan on the current repository.
 
 Perform the following scans in order:
 
-1. **Dependency CVEs** — `pnpm audit --prod` (all severities). For non-pnpm repos, use the equivalent (`npm audit`, etc.)
+1. **Dependency CVEs** — the stack's `dependency-audit` stage (`node --experimental-strip-types scripts/stack.ts
+   run dependency-audit`; `show` prints the command for each workspace). Report all severities, not just
+   the ones the stage blocks on
 2. **Filesystem scan** — `trivy fs . --scanners vuln,secret --severity HIGH,CRITICAL --ignore-unfixed` (skip LOW/MEDIUM noise)
 3. **Secret scan** — `gitleaks detect --source . --no-banner`
 
@@ -18,7 +20,9 @@ After all scans complete:
 
 4. Summarize findings grouped by severity: **critical | high | medium | low**
 5. For each CRITICAL or HIGH finding: identify the affected package/file, explain the impact, and give a specific fix (version bump or override)
-6. Flag any GPL-licensed dependency additions that violate an AGPL-3.0 dual-commercial license structure
+6. **Licences** — run the stack's `licence-check` stage, and flag any new dependency whose licence is in
+   `licence.forbidden` in `.sdlc/stack.yaml` (for example GPL dependencies in an AGPL dual-licensed
+   repo). With no `licence.forbidden`, list new dependencies' licences and say no policy is declared
 7. If all scans are clean, confirm it is safe to proceed
 
 Do not suggest proceeding with PR prep until all CRITICAL and HIGH findings are resolved.
@@ -27,12 +31,17 @@ Do not suggest proceeding with PR prep until all CRITICAL and HIGH findings are 
 (the committed lockfile, or an SBOM if the repo produces one) and name it in the summary, so a later
 advisory can be traced to what it affects.
 
-## Context (pnpm monorepo)
+## Remediation, by stack
 
-- Primary package manager: pnpm (workspace monorepo)
-- Fix transitive CVEs via `pnpm.overrides` in the root `package.json`, not by pinning in child packages
-- Fix direct dep CVEs by bumping the version in the relevant `package.json`
-- After adding overrides: run `pnpm install` then re-run `pnpm audit` to verify
+Fix a direct dependency by bumping it where it is declared. Fix a transitive one at the workspace root,
+not by pinning it in a child module, then re-run the `dependency-audit` stage to confirm:
+
+<!-- stack-examples -->
+- **node-pnpm:** `pnpm.overrides` in the root `package.json`, then `pnpm install`
+- **node-npm:** `overrides` in `package.json`, then `npm install`
+- **java-maven:** a version in `<dependencyManagement>` (the parent pom for multi-module builds)
+- **java-gradle:** a `constraints { }` block, or `resolutionStrategy.force`, in the root build
+<!-- /stack-examples -->
 
 ---
 
