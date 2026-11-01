@@ -3,7 +3,7 @@ name: op-hotfix
 description: Production hotfix — minimal blast radius, with an incident record and a follow-up backlog loop. Use for urgent production fixes.
 ---
 
-<!-- GENERATED from skills/op-hotfix/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-hotfix/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<symptom description>`. Codex has no argument substitution: take `{input}`

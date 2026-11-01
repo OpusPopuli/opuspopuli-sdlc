@@ -37,7 +37,7 @@ function checkOne(path: string): ProfileFinding[] {
 
 function exampleProfiles(): string[] {
   return readdirSync(EXAMPLE_PROFILES_DIR)
-    .filter((f) => f.endsWith(".yaml"))
+    .filter((f) => f.endsWith(".compliance-profile.yaml"))
     .map((f) => join(EXAMPLE_PROFILES_DIR, f));
 }
 

@@ -8,9 +8,11 @@ Verify that the current change actually does what it is supposed to — by exerc
 observing behavior, not by trusting that unit tests passing means it works. Context: $ARGUMENTS
 
 1. Identify the user-facing (or service-facing) flow this change affects. If the `verify` skill exists,
-   use it to bootstrap/drive the flow; otherwise drive it directly (API call, GraphQL query, UI path, worker job).
-2. Put the change in its **real runtime**: start the affected service(s) or worker, hit the federated
-   gateway, run the actual query/mutation or trigger the job — do not stub the layer under test.
+   use it to bootstrap/drive the flow; otherwise drive it directly (API call — REST, GraphQL
+   or gRPC — UI path, worker job).
+2. Put the change in its **real runtime**: start the affected service(s) or worker, call it through its
+   real entry point (the API gateway, if the repo has one), run the actual request or trigger the job —
+   do not stub the layer under test.
 3. Observe the actual output and side effects: response shape, DB rows written, queue messages, logs.
    Compare against the intended behavior from the issue/plan.
 4. Exercise the **failure and edge paths**, not just the happy path (empty input, unauthorized caller,

@@ -11,7 +11,8 @@ This is an investigation only — produce no production code.
 1. Define the question(s) this spike must answer
 2. Survey the relevant parts of the codebase for existing patterns
 3. Consider 2-3 approaches with tradeoffs (performance, complexity, licensing)
-4. Account for stack constraints: NestJS microservices, pgvector, self-hosted embeddings/LLM, AGPL-3.0
+4. Account for the repo's stack and constraints: its languages and frameworks (`.sdlc/stack.yaml`), its
+   architecture rules (CLAUDE.md or AGENTS.md), and its licence policy (`licence.forbidden`)
 5. Produce a clear recommendation with rationale
 6. Identify follow-up issues to create
 

@@ -3,7 +3,7 @@ name: op-issue-plan
 description: Create a detailed, persisted implementation plan for a GitHub issue, with a risk register and data classification. Use when planning work on an issue before implementation.
 ---
 
-<!-- GENERATED from skills/op-issue-plan/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-issue-plan/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 **Input:** `<issue-number>`. Codex has no argument substitution: take `{input}`
@@ -17,7 +17,8 @@ Create a detailed implementation plan for GitHub issue #{input}.
    - Which files to create or modify
    - Which service/package it lives in
    - Any schema migrations required
-   - Any GraphQL schema or resolver changes (flag federation impact)
+   - Any API contract changes: GraphQL schema or resolvers (flag federation impact if the repo
+     federates), OpenAPI/REST endpoints, gRPC protos. Flag anything not backward compatible
    - Test coverage needed
 4. **Data classification** (scoped to the repo's compliance profile): state whether this change
    touches any regulated data class the profile (`.sdlc/compliance-profile.yaml`, or the deprecated `.claude/` copy) makes active —
@@ -31,7 +32,8 @@ Create a detailed implementation plan for GitHub issue #{input}.
    risk register) is produced regardless of profile.
 5. **Risk register**: for each material risk, record it as `severity × likelihood → mitigation`
    (severity: low/medium/high/critical; likelihood: rare/possible/likely). Cover breaking changes,
-   migration safety, AGPL-3.0 dependency constraints, and regulated-data exposure.
+   migration safety, new dependencies against the repo's licence policy (`licence.forbidden` in
+   `.sdlc/stack.yaml`), and regulated-data exposure.
 6. Estimate total effort
 7. Suggest a branch name (conventional: type/issue-num-short-description)
 

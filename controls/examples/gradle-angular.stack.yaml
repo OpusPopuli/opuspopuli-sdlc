@@ -1,0 +1,16 @@
+# Worked example — a polyglot service: Gradle (Java/Kotlin) backend, Angular frontend on npm.
+# Copy to .sdlc/stack.yaml. The backend build applies jacoco, checkstyle, com.github.spotbugs,
+# de.aaschmid.cpd, org.owasp.dependencycheck and com.github.jk1.dependency-license-report; their
+# thresholds live in the Gradle build, not here.
+version: 1
+workspaces:
+  - path: backend
+    preset: java-gradle
+  - path: frontend
+    preset: node-npm
+    commands:
+      lint: npx ng lint
+licence:
+  # Applied to the npm workspace by the preset, and read by the review skills. The Gradle workspace
+  # enforces its policy through the jk1 plugin's allowedLicensesFile; keep the two consistent.
+  forbidden: [GPL-2.0-only, GPL-3.0-only, AGPL-3.0-only]

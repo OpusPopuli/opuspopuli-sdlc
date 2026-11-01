@@ -79,6 +79,30 @@ AI data-handling posture recorded by `op-validate` differ. For the push-time gat
 **Tested with Codex:** discovery of all 18 skills (codex-cli 0.166.0). End-to-end runs of `op-issue-plan`,
 `op-data-scan` and `op-verify` are the first thing to check on a real repo before rolling out wider.
 
+## Declare your stack
+
+The gate's build stages and the skills' commands come from `.sdlc/stack.yaml`, so the same SDLC runs a
+pnpm monorepo, a Maven service, or a Gradle backend with an Angular frontend:
+
+```yaml
+# .sdlc/stack.yaml
+version: 1
+workspaces:
+  - path: backend
+    preset: java-gradle
+  - path: frontend
+    preset: node-npm
+licence:
+  forbidden: [GPL-2.0-only, GPL-3.0-only, AGPL-3.0-only]
+```
+
+Presets: `node-pnpm`, `node-npm`, `java-maven`, `java-gradle`. A single-stack repo can just write
+`preset: java-maven`, or skip the file and let it be detected. Override any stage under `commands:`.
+`node --experimental-strip-types scripts/stack.ts show` prints what will run. Examples are in
+[`controls/examples/`](controls/examples/); the presets and the complete reference gate
+([`templates/gate/pre-push`](templates/gate/pre-push)) are described in
+[`hooks/pre-push-gate.md`](hooks/pre-push-gate.md).
+
 ## Declare your compliance profile
 
 Each consuming repo says which frameworks apply to it in `.sdlc/compliance-profile.yaml`. Families you

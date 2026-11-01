@@ -9,10 +9,11 @@ override is meant to be logged as an exception in `op-validate`'s release pack).
 
 ## Stages
 
-1. **Coverage floor** — `pnpm test` with per-package coverage thresholds
-2. **Duplication** — `pnpm jscpd`
-3. **Lint** — `pnpm lint` / SonarJS rules
-4. **Dependency audit** — block on HIGH/CRITICAL CVEs in production deps
+1. **Tests and coverage floor** — the stack's `test` stage; floors live in the build config
+2. **Duplication** — the stack's `duplication` stage
+3. **Lint** — the stack's `lint` stage
+4. **Dependency audit and licence policy** — the stack's `dependency-audit` and `licence-check` stages:
+   block on HIGH/CRITICAL CVEs in production dependencies and on licences in `licence.forbidden`
 5. **Filesystem scan** — `trivy fs` for vulns + secrets
 6. **Secret scan** — `gitleaks detect`
 
@@ -22,6 +23,49 @@ override is meant to be logged as an exception in `op-validate`'s release pack).
    never depends on a model.
 7. **AI code-review gate** — the configured review provider on the diff; block on production-breaking issues or GPL deps
 8. **AI security-review gate** — the configured review provider on the diff; block on injection/authz/SSRF/secrets/**PHI-PII exposure**
+
+## The build stages (1–4): stack-neutral
+
+Stages 1–4 run whatever the repo's stack needs, resolved by [`stack.ts`](stack.ts) from
+`.sdlc/stack.yaml` (#71). A repo declares a `preset`, or `workspaces` for a polyglot repo, plus
+optional per-stage overrides and a licence policy:
+
+```yaml
+# .sdlc/stack.yaml — a Gradle backend with an Angular frontend
+version: 1
+workspaces:
+  - path: backend
+    preset: java-gradle
+  - path: frontend
+    preset: node-npm
+    commands:
+      lint: npx ng lint
+licence:
+  forbidden: [GPL-2.0-only, GPL-3.0-only, AGPL-3.0-only]
+```
+
+<!-- stack-examples -->
+| Preset | test | lint | duplication | dependency-audit | licence-check |
+|---|---|---|---|---|---|
+| `node-pnpm` | `pnpm test` | `pnpm lint` | jscpd 4.3.0 | `pnpm audit --prod --audit-level=high` | license-checker-rseidelsohn 4.4.2, `--failOn` the forbidden list |
+| `node-npm` | `npm test` | `npm run lint` | jscpd 4.3.0 | `npm audit --omit=dev --audit-level=high` | as for pnpm |
+| `java-maven` | `mvn -B verify` (JaCoCo `check` bound to verify) | `checkstyle:check spotbugs:check` | `pmd:cpd-check` | OWASP `dependency-check-maven:check`, CVSS ≥ 7 | `license-maven-plugin:add-third-party`, forbidden list excluded |
+| `java-gradle` | `test jacocoTestCoverageVerification` | `checkstyleMain spotbugsMain` | `cpdCheck` | `dependencyCheckAnalyze` | `checkLicense` (policy in the jk1 plugin's allowed-licences file) |
+<!-- /stack-examples -->
+
+Each preset also has a `build` stage, which `op-pr-prep` uses. The Java presets prefer `./mvnw` or
+`./gradlew` when the workspace has one, and assume the standard plugins are declared in the build;
+thresholds (coverage, CVSS, duplication) live there. Any stage can be overridden per workspace, and
+`off` disables one on the record: it prints as skipped, never as passed.
+
+- `node --experimental-strip-types scripts/stack.ts show` prints the resolved plan.
+- With no `stack.yaml`, the runner detects a single stack from root build files and says so; several
+  stacks, or none, is an error, so a polyglot repo must declare its workspaces.
+- **Fails closed:** a config error, an unknown preset or stage, a missing workspace, or a failing
+  command blocks.
+- Repo-specific behaviour that a preset cannot express, such as treating an unreachable advisory
+  endpoint as a warning rather than a finding, stays in a `commands:` override that calls the repo's
+  own script.
 
 ## The deterministic data scan (6b)
 
@@ -93,20 +137,18 @@ dependencies, unit-tested for every row above. Vendor it into the consuming repo
 
 ## Install (husky example)
 
-Add these stages to `.husky/pre-push` in the consuming repo. The reference implementation lives in the
-`opuspopuli` monorepo's `.husky/pre-push`; copy it and adjust package-manager commands per repo.
+[`templates/gate/pre-push`](../templates/gate/pre-push) is the complete gate for any stack. It works
+as `.husky/pre-push`, from lefthook's `pre-push`, or as `.git/hooks/pre-push`:
 
-Vendor `data-scan.ts` and `review-gate.ts` into the consuming repo (for example `scripts/`). Stage 6b,
-then stages 7–8:
+1. Vendor `stack.ts`, `data-scan.ts` and `review-gate.ts` from `hooks/` into the repo's `scripts/`.
+2. Add `.sdlc/stack.yaml` (examples in [`controls/examples/`](../controls/examples/): pnpm monorepo,
+   Maven service, Gradle + Angular), or rely on detection for a single-stack repo.
+3. Copy `templates/gate/pre-push` into place and make it executable.
 
-```sh
-# .husky/pre-push (stages 7-8)
-PROVIDER="${SDLC_REVIEW_PROVIDER:-codex}"   # or claude
-BASE="origin/$(git remote show origin | sed -n 's/.*HEAD branch: //p')"
-node --experimental-strip-types scripts/data-scan.ts --base "$BASE" || exit 1
-node --experimental-strip-types scripts/review-gate.ts --provider "$PROVIDER" --lens code --base "$BASE" || exit 1
-node --experimental-strip-types scripts/review-gate.ts --provider "$PROVIDER" --lens security --base "$BASE" || exit 1
-```
+Every stage fails closed, including a missing Trivy or gitleaks. Set `SDLC_REVIEW_PROVIDER=codex` to
+review with Codex, and `SDLC_BASE` to override the base branch. The `opuspopuli` monorepo keeps its own
+`.husky/pre-push` with repo-specific handling (for example, a retired npm advisory endpoint is a warning
+there rather than a block).
 
 The developer's CLI must be installed and signed in (`claude` or `codex login`). If it is not, the push
 is blocked with a message saying so.
@@ -124,7 +166,7 @@ resolves and validates it the same way the skills do. When `hipaa` is declared, 
 When `us-state-privacy` is declared, apply the CCPA personal-information lens (broader than PII); when
 `gdpr` is declared, the EU personal-data lens; when `pci-dss` is declared, the payment card lens (PANs
 outside test numbers, unmasked PANs, and any stored sensitive authentication data). With no profile, default to the strict PHI/PII lens
-above. The framework-agnostic stages (coverage, duplication, lint, dependency/secret scans, AI
+above. The framework-agnostic stages (tests, duplication, lint, dependency/licence/secret scans, AI
 code-review) always run. This makes the active data-handling control **enforced at push time**, not
 merely available as the `op-data-scan` skill.
 

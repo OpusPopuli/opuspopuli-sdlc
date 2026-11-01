@@ -83,7 +83,9 @@ families: [us-state-privacy, soc2]
 applicability: [ca-personal-information]
 ```
 
-Worked examples live in [`controls/examples/`](examples/). Validate a profile against the registry:
+Worked examples live in [`controls/examples/`](examples/): `*.compliance-profile.yaml` for profiles,
+and `*.stack.yaml` for the stack file that sets the gate's build commands (`hooks/stack.ts`, #71).
+Validate a profile against the registry:
 
 ```
 npm run profile:check -- .sdlc/compliance-profile.yaml     # one file

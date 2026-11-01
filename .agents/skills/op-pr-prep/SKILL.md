@@ -3,17 +3,20 @@ name: op-pr-prep
 description: Prepare the current branch for a pull request — checks, PR description, reviewers, compliance artifacts. Use right before opening a PR.
 ---
 
-<!-- GENERATED from skills/op-pr-prep/SKILL.md (opuspopuli-sdlc v0.9.0) by
+<!-- GENERATED from skills/op-pr-prep/SKILL.md (opuspopuli-sdlc v0.10.0) by
      controls/scripts/generate-agent-skills.ts. Edit the source, then run `npm run skills:generate`. -->
 
 Prepare the current branch for a pull request.
 
-1. Run: pnpm lint && pnpm test && pnpm build
+1. Run the stack's `lint`, `test` and `build` stages (`node --experimental-strip-types scripts/stack.ts run
+   lint`, then `test`, then `build`); every workspace must pass
 2. Review the full diff against the base branch — flag anything unexpected
 3. Check for: console.log, debug flags, TODO comments, hardcoded secrets, skipped tests
 4. Run `$op-data-scan` — no critical/high regulated-data exposure may remain
-5. Verify GraphQL schema changes don't break federation (check gateway compatibility)
-6. Confirm no new dependencies conflict with AGPL-3.0 license
+5. If the change touches an API contract, verify it is backward compatible for existing callers: a
+   GraphQL schema (and, with federation, gateway composition), an OpenAPI spec, or gRPC protos
+6. Confirm no new dependency has a licence in `licence.forbidden` (`.sdlc/stack.yaml`); the stack's
+   `licence-check` stage enforces it
 7. Draft a PR description:
    - Title (conventional commits format)
    - What changed and why
